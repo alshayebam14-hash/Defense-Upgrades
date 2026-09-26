@@ -199,7 +199,7 @@
         </div>
     </div>
 
-    <!-- 5. تبويب المعاينة والمخرجات (مفصول للضباط والأفراد) -->
+    <!-- 5. تبويب المعاينة والمخرجات -->
     <div id="tab-output" class="tab-content">
         
         <!-- قسم الضباط -->
@@ -207,7 +207,7 @@
             <h3>⭐ تخصيص ومعاينة أكواد وضباط القطاع</h3>
             <label>صيغة أكواد الضباط:</label>
             <textarea id="officersTemplate"><@discordId>
-OFFICER 🛡️ {name} {id}</textarea>
+GR ⭐ M-{unitId} {name} {id}</textarea>
             
             <label style="margin-top: 15px;">معاينة أكواد الضباط الجاهزة للنسخ:</label>
             <textarea id="previewOfficersOutput" readonly style="height: 120px; background: #111;"></textarea>
@@ -219,7 +219,7 @@ OFFICER 🛡️ {name} {id}</textarea>
             <h3>🛡️ تخصيص ومعاينة أكواد وأفراد القطاع</h3>
             <label>صيغة أكواد الأفراد:</label>
             <textarea id="soldiersTemplate"><@discordId>
-GR 🛡️ R-{unitId} {name} {id}</textarea>
+GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
             <label style="margin-top: 15px;">معاينة أكواد الأفراد الجاهزة للنسخ:</label>
             <textarea id="previewSoldiersOutput" readonly style="height: 120px; background: #111;"></textarea>
@@ -365,7 +365,6 @@ GR 🛡️ R-{unitId} {name} {id}</textarea>
                 const name = row[4] || '';
                 const id = row[5] || '';
                 const unitId = row[6] || '';
-                const rank = row[1] || ''; // افتراض أن الرتبة في عمود B مثلاً، يمكنك تخصيصها
 
                 const formatted = (template) => template
                     .replace(/{discordId}/g, discordVal)
@@ -373,7 +372,6 @@ GR 🛡️ R-{unitId} {name} {id}</textarea>
                     .replace(/{id}/g, id)
                     .replace(/{unitId}/g, unitId);
 
-                // كمثال تفريقي بين الضباط والأفراد بناءً على نص الرتبة أو إمكانية نسخها مباشرة
                 soldiersOutput += formatted(soldierTemplate) + "\n\n";
                 officersOutput += formatted(officerTemplate) + "\n\n";
             }
