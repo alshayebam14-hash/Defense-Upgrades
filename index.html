@@ -21,7 +21,7 @@
             margin: 0;
             padding: 20px;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1300px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 20px; }
         
         /* التبويبات */
@@ -59,6 +59,29 @@
         }
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 250px; }
+        
+        /* شبكة الدورات الأفقية */
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .course-box {
+            background-color: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .course-box h4 {
+            margin-top: 0;
+            color: #60a5fa;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #bbb; }
         input, select, textarea {
             width: 100%;
@@ -97,7 +120,7 @@
 <div class="container">
     <header>
         <h1>🛡️ نظام إدارة وترقيات القطاع العسكري</h1>
-        <p>إدارة الشروط، الدورات، الفلترة، وصيغ الأكواد والترقيات بذكاء</p>
+        <p>إدارة الشروط، الدورات الأفقية، الفلترة، وصيغ الأكواد والترقيات بذكاء</p>
     </header>
 
     <!-- أزرار التبويبات -->
@@ -123,40 +146,71 @@
     <div id="tab-rules" class="tab-content">
         <div class="card">
             <h3>⚖️ شروط الترقيات لكل رتبة</h3>
-            <p>حدد الحد الأدنى للسجلات (عمود I) والدورات المطلوبة لكل رتبة عسكرية:</p>
+            <p>حدد الحد الأدنى للسجلات (عمود I) المطلوبة لكل رتبة عسكرية:</p>
             <table>
                 <thead>
                     <tr>
                         <th>الرتبة</th>
                         <th>السجلات المطلوبة (عمود I)</th>
-                        <th>الدورات المطلوبة</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>جندي ⬅️ جندي أول</td>
                         <td><input type="number" id="req_records_1" value="5"></td>
-                        <td><input type="text" id="req_courses_1" value="دورة الأساسية"></td>
                     </tr>
                     <tr>
                         <td>جندي أول ⬅️ عريف</td>
                         <td><input type="number" id="req_records_2" value="10"></td>
-                        <td><input type="text" id="req_courses_2" value="دورة القيادة"></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- 3. تبويب الدورات -->
+    <!-- 3. تبويب الدورات (شكل أفقي) -->
     <div id="tab-courses" class="tab-content">
         <div class="card">
-            <h3>🎖️ إدارة الدورات واجتياز الأعضاء</h3>
-            <label>اسم الدورة:</label>
-            <input type="text" id="newCourseName" placeholder="مثال: دورة القوات الخاصة">
-            <label>أكواد ديسكورد الحاصلين عليها (مفصولة بفاصلة أو سطر جديد):</label>
-            <textarea id="courseMembers" placeholder="<@123456789>\n<@987654321>"></textarea>
-            <button class="btn-success" onclick="saveCourse()">💾 حفظ دورة جديدة</button>
+            <h3>🎖️ إدارة الدورات واجتياز الأعضاء (توزيع أفقي)</h3>
+            <p>ضع أكواد الديسكورد (Copy User) لكل دورة في خانتها الخاصة، وسيتم حفظها بشكل دائم:</p>
+            
+            <div class="courses-grid">
+                <div class="course-box">
+                    <h4>فرد أساس</h4>
+                    <textarea id="course_0" placeholder="<@123456789>\n<@987654321>"></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>مركز العمليات</h4>
+                    <textarea id="course_1" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>الاسعافات الاولية</h4>
+                    <textarea id="course_2" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>تأهيل الضباط</h4>
+                    <textarea id="course_3" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>المظلات المشتركة</h4>
+                    <textarea id="course_4" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>الصاعقة</h4>
+                    <textarea id="course_5" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>الضفادع البشرية</h4>
+                    <textarea id="course_6" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+                <div class="course-box">
+                    <h4>صقور جوية</h4>
+                    <textarea id="course_7" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                </div>
+            </div>
+            
+            <br>
+            <button class="btn-success" onclick="saveCoursesData()">💾 حفظ جميع بيانات الدورات</button>
         </div>
     </div>
 
@@ -198,7 +252,7 @@
         <div class="card">
             <h3>⚙️ تخصيص صيغة الأكواد الجديدة والأسماء</h3>
             <textarea id="codeTemplate"><@discordId>
-GR 🛡️ R-{unitId} {name} {discordId}</textarea>
+GR 🛡️ R-{unitId} {name} {id}</textarea>
             <small style="color: #888;">المتغيرات المتاحة: {name}, {id} (الايدي), {unitId} (رقم اليونت عمود G), {discordId}</small>
         </div>
 
@@ -226,7 +280,7 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
 
 <script>
     let membersData = [];
-    let eligibilityMap = {}; // تخزين حالة الصح والخطأ لكل عسكري
+    let eligibilityMap = {};
 
     function switchTab(evt, tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -266,17 +320,15 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
         }
 
         membersData.forEach((row, index) => {
-            if(index === 0) return; // تخطي رأس الجدول
-            
-            const discordVal = row[3] || ''; // عمود D أو المنشن
+            if(index === 0) return;
+            const discordVal = row[3] || '';
             if(!discordVal) return;
 
-            const name = row[4] || '';      // عمود E (الاسم)
-            const id = row[5] || '';        // عمود F (الأيدي)
-            const unitId = row[6] || '';    // عمود G (رقم اليونت)
-            const records = parseInt(row[8]) || 0; // عمود I (السجلات)
+            const name = row[4] || '';
+            const id = row[5] || '';
+            const unitId = row[6] || '';
+            const records = parseInt(row[8]) || 0;
 
-            // شرط تلقائي مبدئي (السجلات >= 5)
             const isEligible = records >= 5;
             if(eligibilityMap[index] === undefined) {
                 eligibilityMap[index] = isEligible;
@@ -329,7 +381,6 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
     function updateOutputs() {
         const template = document.getElementById('codeTemplate').value;
         let codesOutput = '';
-        let promotedListText = '';
 
         membersData.forEach((row, index) => {
             if(index === 0) return;
@@ -339,7 +390,6 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
                 const id = row[5] || '';
                 const unitId = row[6] || '';
 
-                // تعويض المتغيرات للصيغة المطلوبة
                 let formattedCode = template
                     .replace(/{discordId}/g, discordVal)
                     .replace(/{name}/g, name)
@@ -347,7 +397,6 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
                     .replace(/{unitId}/g, unitId);
 
                 codesOutput += formattedCode + "\n\n";
-                promotedListText += `• ${discordVal} - ${name}\n`;
             }
         });
 
@@ -361,10 +410,21 @@ GR 🛡️ R-{unitId} {name} {discordId}</textarea>
         alert('تم النسخ بنجاح إلى الحافظة! ✅');
     }
 
-    function saveCourse() {
-        const courseName = document.getElementById('newCourseName').value;
-        if(!courseName) { alert('أدخل اسم الدورة'); return; }
-        alert('تم حفظ بيانات الدورة بنجاح!');
+    function saveCoursesData() {
+        // حفظ الدورات في الذاكرة المحلية للمتصفح لتظل موجودة حتى بعد التحديث
+        for(let i=0; i<8; i++) {
+            const val = document.getElementById('course_'+i).value;
+            localStorage.setItem('course_'+i, val);
+        }
+        alert('تم حفظ بيانات جميع الدورات بنجاح! 💾');
+    }
+
+    // استرجاع الدورات المحفوظة عند فتح الصفحة
+    window.onload = function() {
+        for(let i=0; i<8; i++) {
+            const saved = localStorage.getItem('course_'+i);
+            if(saved) document.getElementById('course_'+i).value = saved;
+        }
     }
 
     function executePromotions() {
