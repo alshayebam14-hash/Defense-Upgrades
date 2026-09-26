@@ -172,7 +172,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 25%;">الترقية (من ⬅️ إلى)</th>
+                        <th style="width: 25%;">الرتبة الحالية ⬅️ التالية</th>
                         <th style="width: 25%;">السجلات المطلوبة</th>
                         <th style="width: 50%;">الدورات المطلوبة (اختيار متعدد)</th>
                     </tr>
@@ -198,7 +198,7 @@
     <!-- 4. تبويب الترقيات -->
     <div id="tab-promotions" class="tab-content">
         <div class="card">
-            <h3>📋 فحص وفلترة المستحقين للترقية</h3>
+            <h3>📋 فحص وفلترة المستحقين للترقية (من الصف 43 فما دون)</h3>
             <div style="overflow-x: auto;">
                 <table id="filterTable">
                     <thead>
@@ -208,12 +208,13 @@
                             <th>الأيدي</th>
                             <th>اليونت</th>
                             <th>السجلات</th>
+                            <th>الرتبة الحالية</th>
                             <th>من رتبة ⬅️ إلى رتبة</th>
                             <th>الاستحقاق</th>
                         </tr>
                     </thead>
                     <tbody id="filterTbody">
-                        <tr><td colspan="7" style="color: #777;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</td></tr>
+                        <tr><td colspan="8" style="color: #777;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -263,10 +264,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
 <script>
     const ranksList = [
-        "جندي ⬅️ جندي أول", "جندي أول ⬅️ عريف", "عريف ⬅️ وكيل رقيب", "وكيل رقيب ⬅️ رقيب",
-        "رقيب ⬅️ رقيب أول", "رقيب أول ⬅️ رئيس رقباء", "رئيس رقباء ⬅️ ملازم", "ملازم ⬅️ ملازم اول",
-        "ملازم اول ⬅️ نقيب", "نقيب ⬅️ رائد", "رائد ⬅️ مقدم", "مقدم ⬅️ عقيد",
-        "عقيد ⬅️ عميد", "عميد ⬅️ لواء", "لواء ⬅️ فريق", "فريق ⬅️ فريق اول"
+        "جندي", "جندي أول", "عريف", "وكيل رقيب",
+        "رقيب", "رقيب أول", "رئيس رقباء", "ملازم",
+        "ملازم اول", "نقيب", "رائد", "مقدم",
+        "عقيد", "عميد", "لواء", "فريق", "فريق اول"
     ];
 
     const coursesList = [
@@ -277,19 +278,22 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     let membersData = [];
     let eligibilityMap = {};
     let memberTargetRank = {};
+    let memberCurrentRank = {};
 
     window.onload = function() {
         const rulesTbody = document.getElementById('rulesTableBody');
-        ranksList.forEach((rank, index) => {
-            const savedVal = localStorage.getItem('rule_rec_'+index) || (index === 0 ? 5 : 10);
-            const savedCourses = JSON.parse(localStorage.getItem('rule_courses_'+index) || '[]');
+        // عرض الترقيات المتتالية (من رتبة إلى الرتبة التي تليها)
+        for(let i = 0; i < ranksList.length - 1; i++) {
+            const rankPair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
+            const savedVal = localStorage.getItem('rule_rec_'+i) || (i === 0 ? 5 : 10);
+            const savedCourses = JSON.parse(localStorage.getItem('rule_courses_'+i) || '[]');
             
             let coursesCheckboxes = '<div class="multi-select-container">';
             coursesList.forEach((course, cIdx) => {
                 const isChecked = savedCourses.includes(cIdx) ? 'checked' : '';
                 coursesCheckboxes += `
                     <label>
-                        <input type="checkbox" class="rule-course-cb-${index}" value="${cIdx}" ${isChecked}>
+                        <input type="checkbox" class="rule-course-cb-${i}" value="${cIdx}" ${isChecked}>
                         ${course}
                     </label>`;
             });
@@ -297,11 +301,11 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
             rulesTbody.innerHTML += `
                 <tr>
-                    <td>${rank}</td>
-                    <td><input type="number" id="rule_rec_${index}" value="${savedVal}"></td>
+                    <td>${rankPair}</td>
+                    <td><input type="number" id="rule_rec_${i}" value="${savedVal}"></td>
                     <td>${coursesCheckboxes}</td>
                 </tr>`;
-        });
+        }
 
         const coursesContainer = document.getElementById('coursesGridContainer');
         coursesList.forEach((course, index) => {
@@ -335,7 +339,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 membersData = data;
                 calculateEligibility();
                 renderFilterTable();
-                alert('تم جلب البيانات وفحص الاستحقاق بنجاح!');
+                alert('تم جلب البيانات وفحص الاستحقاق (حتى الصف 43) بنجاح!');
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
@@ -343,51 +347,49 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             });
     }
 
-    // حساب الاستحقاق بناءً على السجلات والدورات المطلوبة لكل رتبة
     function calculateEligibility() {
         eligibilityMap = {};
         memberTargetRank = {};
+        memberCurrentRank = {};
 
         membersData.forEach((row, index) => {
             if(index === 0) return;
+            // الشرط: جلب البيانات من الصف 43 فما دون (index من 1 إلى 43 في المصفوفة البشرية)
+            if(index > 43) return;
+
             const discordVal = row[3] || '';
             if(!discordVal) return;
 
+            const currentRank = (row[2] || '').trim(); // الرتبة الحالية من عمود C
+            memberCurrentRank[index] = currentRank;
+
+            const rankIdx = ranksList.findIndex(r => r === currentRank);
+            if(rankIdx === -1 || rankIdx >= ranksList.length - 1) {
+                eligibilityMap[index] = false;
+                memberTargetRank[index] = '-';
+                return;
+            }
+
             const records = parseInt(row[8]) || 0;
-            let matchedRankIndex = -1;
+            const minRec = parseInt(localStorage.getItem('rule_rec_'+rankIdx) || 10);
+            const reqCourses = JSON.parse(localStorage.getItem('rule_courses_'+rankIdx) || '[]');
 
-            // فحص من الأدنى للأعلى أو حسب رتبة العضو (هنا نفترض الفحص على أول رتبة مستحقة تطابق الشروط)
-            for(let rIdx = 0; rIdx < ranksList.length; rIdx++) {
-                const minRec = parseInt(localStorage.getItem('rule_rec_'+rIdx) || (rIdx === 0 ? 5 : 10));
-                const reqCourses = JSON.parse(localStorage.getItem('rule_courses_'+rIdx) || '[]');
+            // التحقق من السجلات
+            let isEligible = (records >= minRec);
 
-                // التحقق من السجلات
-                if(records >= minRec) {
-                    // التحقق من اجتياز جميع الدورات المطلوبة لهذه الرتبة
-                    let hasAllCourses = true;
-                    for(let cIdx of reqCourses) {
-                        const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
-                        // التأكد أن كود الديسكورد موجود في نص الدورة
-                        if(!courseText.includes(discordVal.trim())) {
-                            hasAllCourses = false;
-                            break;
-                        }
-                    }
-
-                    if(hasAllCourses) {
-                        matchedRankIndex = rIdx;
-                        break; // وجدنا أعلى/أول رتبة مستحقة
+            // التحقق من الدورات المطلوبة
+            if(isEligible) {
+                for(let cIdx of reqCourses) {
+                    const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
+                    if(!courseText.includes(discordVal.trim())) {
+                        isEligible = false;
+                        break;
                     }
                 }
             }
 
-            if(matchedRankIndex !== -1) {
-                eligibilityMap[index] = true;
-                memberTargetRank[index] = ranksList[matchedRankIndex];
-            } else {
-                eligibilityMap[index] = false;
-                memberTargetRank[index] = '-';
-            }
+            eligibilityMap[index] = isEligible;
+            memberTargetRank[index] = `${ranksList[rankIdx]} ⬅️ ${ranksList[rankIdx+1]}`;
         });
     }
 
@@ -398,6 +400,8 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
         membersData.forEach((row, index) => {
             if(index === 0) return;
+            if(index > 43) return; // فلترة الصف 43 وما يليه
+
             const discordVal = row[3] || '';
             if(!discordVal) return;
 
@@ -405,6 +409,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const id = row[5] || '';
             const unitId = row[6] || '';
             const records = parseInt(row[8]) || 0;
+            const currentRank = memberCurrentRank[index] || '-';
             const isEligible = eligibilityMap[index] || false;
             const rankTransition = memberTargetRank[index] || '-';
 
@@ -415,6 +420,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                     <td>${id}</td>
                     <td>${unitId}</td>
                     <td>${records}</td>
+                    <td><b style="color: #f59e0b;">${currentRank}</b></td>
                     <td style="color: #60a5fa; font-weight: bold;">${rankTransition}</td>
                     <td>
                         <select onchange="changeEligibility(${index}, this.value)" style="padding: 5px;">
@@ -437,7 +443,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         let html = '', count = 0;
 
         membersData.forEach((row, index) => {
-            if(index === 0) return;
+            if(index === 0 || index > 43) return;
             if(eligibilityMap[index] === true) {
                 count++;
                 const discordVal = row[3] || '';
@@ -460,7 +466,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         let officersOutput = '', soldiersOutput = '';
 
         membersData.forEach((row, index) => {
-            if(index === 0) return;
+            if(index === 0 || index > 43) return;
             if(eligibilityMap[index] === true) {
                 const discordVal = row[3] || '';
                 const name = row[4] || '';
@@ -490,14 +496,16 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     }
 
     function saveRulesData() {
-        ranksList.forEach((_, index) => {
-            localStorage.setItem('rule_rec_'+index, document.getElementById('rule_rec_'+index).value);
-            
-            const checkboxes = document.querySelectorAll(`.rule-course-cb-${index}:checked`);
+        for(let i = 0; i < ranksList.length - 1; i++) {
+            const inputElem = document.getElementById('rule_rec_'+i);
+            if(inputElem) {
+                localStorage.setItem('rule_rec_'+i, inputElem.value);
+            }
+            const checkboxes = document.querySelectorAll(`.rule-course-cb-${i}:checked`);
             const selectedCourses = Array.from(checkboxes).map(cb => parseInt(cb.value));
-            localStorage.setItem('rule_courses_'+index, JSON.stringify(selectedCourses));
-        });
-        alert('تم حفظ شروط الترقيات والدورات المطلوبة بنجاح! 💾');
+            localStorage.setItem('rule_courses_'+i, JSON.stringify(selectedCourses));
+        }
+        alert('تم حفظ شروط الترقيات بنجاح! 💾');
         if(membersData.length > 0) {
             calculateEligibility();
             renderFilterTable();
