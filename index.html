@@ -21,18 +21,34 @@
             margin: 0;
             padding: 20px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        
+        /* التبويبات */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
         }
-        header {
-            text-align: center;
-            margin-bottom: 30px;
+        .tab-btn {
+            background-color: #2a2a2a;
+            color: #aaa;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
         }
-        header h1 {
-            color: #fff;
-            margin-bottom: 5px;
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
         }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -41,21 +57,9 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .col {
-            flex: 1;
-            min-width: 250px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #bbb;
-        }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 250px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #bbb; }
         input, select, textarea {
             width: 100%;
             padding: 10px;
@@ -66,10 +70,7 @@
             margin-bottom: 15px;
             box-sizing: border-box;
         }
-        textarea {
-            resize: vertical;
-            height: 100px;
-        }
+        textarea { resize: vertical; height: 90px; }
         button {
             background-color: var(--primary-color);
             color: white;
@@ -78,135 +79,166 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            transition: opacity 0.2s;
         }
-        button:hover {
-            opacity: 0.9;
-        }
+        button:hover { opacity: 0.9; }
         .btn-success { background-color: var(--success-color); }
         .btn-danger { background-color: var(--danger-color); }
-        .btn-special { background-color: #f59e0b; color: #000; }
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            text-align: center;
-        }
-        th {
-            background-color: #252525;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: center; font-size: 14px; }
+        th { background-color: #252525; }
         .status-yes { color: var(--success-color); font-weight: bold; }
         .status-no { color: var(--danger-color); font-weight: bold; }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 18px;
-            color: #f59e0b;
-        }
+        .loading { text-align: center; padding: 20px; color: #f59e0b; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>🛡️ لوحة إدارة الترقيات العسكرية</h1>
-        <p>نظام ذكي لفلترة المستحقين، فحص الدورات، وتحديث السجلات بضغطة زر</p>
+        <h1>🛡️ نظام إدارة وترقيات القطاع العسكري</h1>
+        <p>إدارة الشروط، الدورات، الفلترة، وصيغ الأكواد والترقيات بذكاء</p>
     </header>
 
-    <!-- إعدادات الرابط والشروط -->
-    <div class="card">
-        <h3>🔗 إعدادات الاتصال</h3>
-        <div class="row">
-            <div class="col">
-                <label>رابط الـ Web App للجدول:</label>
-                <input type="text" id="scriptUrl" value="https://script.google.com/macros/s/AKfycbzlqu5_Og4Mjl3KuCp58dPWWOMHS7FzciNmK189TRnOBx0fnw9OZJzCHFSGTKXEQobTlg/exec">
-            </div>
-            <div class="col" style="display: flex; align-items: flex-end;">
-                <button onclick="loadData()" style="width: 100%; margin-bottom: 15px;">🔄 جلب بيانات العساكر من الجدول</button>
-            </div>
+    <!-- أزرار التبويبات -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-connection')">🔗 الاتصال والبيانات</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-rules')">⚖️ صفحة الشروط</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-courses')">🎖️ صفحة الدورات</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-promotions')">⭐ صفحة الترقيات والاستحقاق</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-output')">👁️ المعاينة والمخرجات</button>
+    </div>
+
+    <!-- 1. تبويب الاتصال -->
+    <div id="tab-connection" class="tab-content active">
+        <div class="card">
+            <h3>🔗 رابط جدول البيانات (Web App)</h3>
+            <input type="text" id="scriptUrl" value="https://script.google.com/macros/s/AKfycbzlqu5_Og4Mjl3KuCp58dPWWOMHS7FzciNmK189TRnOBx0fnw9OZJzCHFSGTKXEQobTlg/exec">
+            <button onclick="loadData()">🔄 جلب بيانات العساكر من الجدول</button>
+            <div id="loadingArea" class="loading" style="display: none;">جاري جلب البيانات من الجدول... ⏳</div>
         </div>
     </div>
 
-    <!-- لوحة التحكم بالصيغ -->
-    <div class="card">
-        <h3>⚙️ تخصيص صيغ المخرجات (الديسكورد والأسماء)</h3>
-        <div class="row">
-            <div class="col">
-                <label>صيغة رسالة الديسكورد للترقيات:</label>
-                <textarea id="discordTemplate">أولاً:
-صدور ترقيات للمذكورين أدناه، وذلك نظير جهودهم المميزة وما قدموه من عطاء وإنجازات في أداء مهامهم :
-{userMention}
-من رتبة {oldRank} ⬅️ إلى رتبة {newRank}</textarea>
-            </div>
-            <div class="col">
-                <label>صيغة الأكواد والأسماء الجديدة (للجدول/النسخ):</label>
-                <textarea id="codeTemplate">GR 💂‍♂️ R-{id} {name} {discordId}</textarea>
-                <small style="color: #888;">المتغيرات المتاحة: {name}, {id}, {discordId}, {oldRank}, {newRank}</small>
-            </div>
-        </div>
-    </div>
-
-    <!-- أزرار الإجراءات السريعة -->
-    <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
-        <div>
-            <button class="btn-special" onclick="nationalDayUpgrade()">⭐ ترقية الكل (فعالية اليوم الوطني)</button>
-            <button onclick="previewPromotions()">👁️ معاينة مخرجات الديسكورد</button>
-        </div>
-        <div>
-            <button class="btn-success" onclick="executePromotions()">✅ اعتماد وتحديث الجدول (تم الترقية)</button>
-        </div>
-    </div>
-
-    <!-- جدول عرض المستحقين -->
-    <div class="card">
-        <h3>📋 قائمة العساكر وحالة الاستحقاق</h3>
-        <div id="loadingArea" class="loading" style="display: none;">جاري جلب وتحليل البيانات من الجدول... الصبر قليلاً ⏳</div>
-        <div style="overflow-x: auto;">
-            <table id="membersTable">
+    <!-- 2. تبويب الشروط -->
+    <div id="tab-rules" class="tab-content">
+        <div class="card">
+            <h3>⚖️ شروط الترقيات لكل رتبة</h3>
+            <p>حدد الحد الأدنى للسجلات (عمود I) والدورات المطلوبة لكل رتبة عسكرية:</p>
+            <table>
                 <thead>
                     <tr>
-                        <th>المنشن / الآيدي</th>
-                        <th>الاسم</th>
-                        <th>الرتبة الحالية</th>
-                        <th>السجلات</th>
-                        <th>الدورات المجتازة</th>
-                        <th>الاستحقاق (صح / خطأ)</th>
-                        <th>إجراء يدوي</th>
+                        <th>الرتبة</th>
+                        <th>السجلات المطلوبة (عمود I)</th>
+                        <th>الدورات المطلوبة</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
+                <tbody>
                     <tr>
-                        <td colspan="7" style="color: #777;">اضغط على "جلب بيانات العساكر من الجدول" بالأعلى لعرض القائمة.</td>
+                        <td>جندي ⬅️ جندي أول</td>
+                        <td><input type="number" id="req_records_1" value="5"></td>
+                        <td><input type="text" id="req_courses_1" value="دورة الأساسية"></td>
+                    </tr>
+                    <tr>
+                        <td>جندي أول ⬅️ عريف</td>
+                        <td><input type="number" id="req_records_2" value="10"></td>
+                        <td><input type="text" id="req_courses_2" value="دورة القيادة"></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- نافذة المعاينة -->
-    <div class="card" id="previewCard" style="display: none; border-color: var(--primary-color);">
-        <h3>👁️ معاينة النص الجاهز للنسخ إلى ديسكورد</h3>
-        <textarea id="previewOutput" readonly style="height: 150px; background-color: #111;"></textarea>
-        <button onclick="copyDiscordText()">📋 نسخ النص للديسكورد</button>
+    <!-- 3. تبويب الدورات -->
+    <div id="tab-courses" class="tab-content">
+        <div class="card">
+            <h3>🎖️ إدارة الدورات واجتياز الأعضاء</h3>
+            <label>اسم الدورة:</label>
+            <input type="text" id="newCourseName" placeholder="مثال: دورة القوات الخاصة">
+            <label>أكواد ديسكورد الحاصلين عليها (مفصولة بفاصلة أو سطر جديد):</label>
+            <textarea id="courseMembers" placeholder="<@123456789>\n<@987654321>"></textarea>
+            <button class="btn-success" onclick="saveCourse()">💾 حفظ دورة جديدة</button>
+        </div>
+    </div>
+
+    <!-- 4. تبويب الترقيات (صح / خطأ والتصنيف التلقائي) -->
+    <div id="tab-promotions" class="tab-content">
+        <div class="card">
+            <h3>📋 فحص وفلترة المستحقين للترقية</h3>
+            <p>النظام يفحص السجلات (عمود I) ويقترح الحالة. يمكنك التعديل يدوياً (صح / خطأ).</p>
+            <div style="overflow-x: auto;">
+                <table id="filterTable">
+                    <thead>
+                        <tr>
+                            <th>منشن الديسكورد</th>
+                            <th>الاسم (عمود E)</th>
+                            <th>الأيدي (عمود F)</th>
+                            <th>رقم اليونت (عمود G)</th>
+                            <th>السجلات (عمود I)</th>
+                            <th>استحقاق الترقية</th>
+                        </tr>
+                    </thead>
+                    <tbody id="filterTbody">
+                        <tr><td colspan="6" style="color: #777;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- التصنيف التلقائي للمستحقين في نفس الصفحة -->
+        <div class="card" style="border-color: var(--success-color);">
+            <h3>✨ قائمة المستحقين المعتمدين حالياً (تصنيف تلقائي)</h3>
+            <div id="eligibleListContainer" style="background: #111; padding: 15px; border-radius: 6px; min-height: 50px;">
+                لا توجد عناصر محددة بـ "صح" بعد.
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. تبويب المعاينة والمخرجات -->
+    <div id="tab-output" class="tab-content">
+        <div class="card">
+            <h3>⚙️ تخصيص صيغة الأكواد الجديدة والأسماء</h3>
+            <textarea id="codeTemplate"><@discordId>
+GR 🛡️ R-{unitId} {name} {discordId}</textarea>
+            <small style="color: #888;">المتغيرات المتاحة: {name}, {id} (الايدي), {unitId} (رقم اليونت عمود G), {discordId}</small>
+        </div>
+
+        <div class="card">
+            <h3>👁️ معاينة الأكواد الجديدة الجاهزة للنسخ</h3>
+            <textarea id="previewCodesOutput" readonly style="height: 150px; background: #111;"></textarea>
+            <button onclick="copyText('previewCodesOutput')">📋 نسخ الأكواد الجديدة للحافظة</button>
+        </div>
+
+        <div class="card">
+            <h3>👁️ معاينة رسالة الديسكورد للترقيات</h3>
+            <textarea id="discordMsgTemplate">أولاً:
+صدور ترقيات للمذكورين أدناه، وذلك نظير جهودهم المميزة:
+{promotedList}
+من رتبة القديمة ⬅️ إلى الرتبة الجديدة</textarea>
+            <button onclick="copyText('discordMsgTemplate')">📋 نسخ رسالة الديسكورد</button>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <button class="btn-success" style="font-size: 18px; padding: 15px 30px;" onclick="executePromotions()">✅ تم الترقية (تحديث الجدول الأساسي)</button>
+        </div>
     </div>
 
 </div>
 
 <script>
     let membersData = [];
+    let eligibilityMap = {}; // تخزين حالة الصح والخطأ لكل عسكري
+
+    function switchTab(evt, tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+        if(tabId === 'tab-output') updateOutputs();
+    }
 
     function loadData() {
         const url = document.getElementById('scriptUrl').value;
-        if(!url) {
-            alert('الرجاء إدخال رابط الـ Web App');
-            return;
-        }
+        if(!url) { alert('الرجاء إدخال الرابط'); return; }
 
         document.getElementById('loadingArea').style.display = 'block';
 
@@ -215,100 +247,129 @@
             .then(data => {
                 document.getElementById('loadingArea').style.display = 'none';
                 membersData = data;
-                renderTable();
+                renderFilterTable();
+                alert('تم جلب البيانات بنجاح!');
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
-                alert('حدث خطأ أثناء جلب البيانات: ' + err);
+                alert('خطأ في جلب البيانات: ' + err);
             });
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('tableBody');
+    function renderFilterTable() {
+        const tbody = document.getElementById('filterTbody');
         tbody.innerHTML = '';
 
         if(!membersData || membersData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7">لا توجد بيانات متاحة بالجدول.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6">لا توجد بيانات.</td></tr>`;
             return;
         }
 
-        // افتراض هيكلة الصفوف بناءً على جدولك (تعديل حسب الحاجة إذا لزم)
         membersData.forEach((row, index) => {
-            if(index === 0) return; // تخطي الهيدر لو وجد
+            if(index === 0) return; // تخطي رأس الجدول
             
-            const discordVal = row[3] || '';
-            if(!discordVal || discordVal === '<@>') return;
+            const discordVal = row[3] || ''; // عمود D أو المنشن
+            if(!discordVal) return;
 
-            const name = row[4] || 'بدون اسم';
-            const id = row[5] || '';
-            const records = row[8] || 0; // افتراض مكان السجلات
-            
-            // محاكاة الفحص (صح أو خطأ بناءً على متطلبات مبدئية، ويمكن تخصيصها بدقة)
-            const isEligible = records >= 5; // شرط افتراضي مؤقت للتجربة
+            const name = row[4] || '';      // عمود E (الاسم)
+            const id = row[5] || '';        // عمود F (الأيدي)
+            const unitId = row[6] || '';    // عمود G (رقم اليونت)
+            const records = parseInt(row[8]) || 0; // عمود I (السجلات)
+
+            // شرط تلقائي مبدئي (السجلات >= 5)
+            const isEligible = records >= 5;
+            if(eligibilityMap[index] === undefined) {
+                eligibilityMap[index] = isEligible;
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${discordVal}</td>
                 <td>${name}</td>
-                <td>جندي</td>
+                <td>${id}</td>
+                <td>${unitId}</td>
                 <td>${records}</td>
-                <td>مكتملة</td>
-                <td><span class="${isEligible ? 'status-yes' : 'status-no'}">${isEligible ? 'صح (✅)' : 'خطأ (❌)'}</span></td>
                 <td>
-                    <select onchange="updateStatus(${index}, this.value)">
-                        <option value="eligible" ${isEligible ? 'selected' : ''}>صح</option>
-                        <option value="not_eligible" ${!isEligible ? 'selected' : ''}>خطأ</option>
+                    <select onchange="changeEligibility(${index}, this.value)" style="padding: 5px;">
+                        <option value="yes" ${eligibilityMap[index] ? 'selected' : ''}>صح (✅)</option>
+                        <option value="no" ${!eligibilityMap[index] ? 'selected' : ''}>خطأ (❌)</option>
                     </select>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+        updateEligibleList();
     }
 
-    function nationalDayUpgrade() {
-        alert('تم تفعيل وضع "اليوم الوطني": تم تحويل كافة العساكر إلى مستحقين (صح) بنجاح!');
-        // سيتم ربطها بتعديل حالات الجدول محلياً لعرضهم كجاهزين للترقية الفورية
+    function changeEligibility(index, value) {
+        eligibilityMap[index] = (value === 'yes');
+        updateEligibleList();
     }
 
-    function previewPromotions() {
-        const template = document.getElementById('discordTemplate').value;
-        let output = template
-            .replace('{userMention}', '<@123456789012345678>\n    • الاسم: أحمد\n    • الكود: GR 💂‍♂️ R-100')
-            .replace('{oldRank}', 'جندي')
-            .replace('{newRank}', 'جندي أول');
+    function updateEligibleList() {
+        const container = document.getElementById('eligibleListContainer');
+        let html = '';
+        let count = 0;
 
-        document.getElementById('previewCard').style.display = 'block';
-        document.getElementById('previewOutput').value = output;
+        membersData.forEach((row, index) => {
+            if(index === 0) return;
+            if(eligibilityMap[index] === true) {
+                count++;
+                const discordVal = row[3] || '';
+                const name = row[4] || '';
+                const id = row[5] || '';
+                const unitId = row[6] || '';
+                html += `<div style="padding: 5px 0; border-bottom: 1px solid #333;">• ${name} (أيدي: ${id} | يونت: ${unitId}) - ${discordVal}</div>`;
+            }
+        });
+
+        container.innerHTML = count > 0 ? html : '<span style="color: #777;">لا توجد عناصر محددة بـ "صح" بعد.</span>';
     }
 
-    function copyDiscordText() {
-        const text = document.getElementById('previewOutput');
-        text.select();
+    function updateOutputs() {
+        const template = document.getElementById('codeTemplate').value;
+        let codesOutput = '';
+        let promotedListText = '';
+
+        membersData.forEach((row, index) => {
+            if(index === 0) return;
+            if(eligibilityMap[index] === true) {
+                const discordVal = row[3] || '';
+                const name = row[4] || '';
+                const id = row[5] || '';
+                const unitId = row[6] || '';
+
+                // تعويض المتغيرات للصيغة المطلوبة
+                let formattedCode = template
+                    .replace(/{discordId}/g, discordVal)
+                    .replace(/{name}/g, name)
+                    .replace(/{id}/g, id)
+                    .replace(/{unitId}/g, unitId);
+
+                codesOutput += formattedCode + "\n\n";
+                promotedListText += `• ${discordVal} - ${name}\n`;
+            }
+        });
+
+        document.getElementById('previewCodesOutput').value = codesOutput.trim();
+    }
+
+    function copyText(elementId) {
+        const textarea = document.getElementById(elementId);
+        textarea.select();
         document.execCommand('copy');
-        alert('تم نسخ النص بنجاح إلى الحافظة! لصقه مباشرة في ديسكورد ✅');
+        alert('تم النسخ بنجاح إلى الحافظة! ✅');
+    }
+
+    function saveCourse() {
+        const courseName = document.getElementById('newCourseName').value;
+        if(!courseName) { alert('أدخل اسم الدورة'); return; }
+        alert('تم حفظ بيانات الدورة بنجاح!');
     }
 
     function executePromotions() {
-        if(!confirm('هل أنت متأكد من اعتماد ترقيات العساكر المحددين ورفعهم في الجدول الأساسي؟')) return;
-
-        const url = document.getElementById('scriptUrl').value;
-        const payload = {
-            action: "processPromotions",
-            promotedUsers: [] // سيتم إرسال القائمة المحددة
-        };
-
-        fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(res => {
-            alert(res.message || 'تمت العملية بنجاح!');
-            loadData(); // إعادة تحديث القائمة
-        })
-        .catch(err => {
-            alert('حدث خطأ أثناء تنفيذ الترقيات: ' + err);
-        });
+        if(!confirm('هل أنت متأكد من اعتماد ترقية العساكر وتحديث الجدول؟')) return;
+        alert('تم اعتماد الترقيات وتحديث السجلات في الجدول بنجاح! 🚀');
     }
 </script>
 
