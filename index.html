@@ -172,9 +172,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 25%;">الترقية من ⬅️ إلى</th>
-                        <th style="width: 25%;">السجلات المطلوبة (عمود I)</th>
-                        <th style="width: 50%;">الدورات المطلوبة (يمكنك اختيار أكثر من دورة)</th>
+                        <th style="width: 25%;">الترقية (من ⬅️ إلى)</th>
+                        <th style="width: 25%;">السجلات المطلوبة</th>
+                        <th style="width: 50%;">الدورات المطلوبة (اختيار متعدد)</th>
                     </tr>
                 </thead>
                 <tbody id="rulesTableBody"></tbody>
@@ -204,24 +204,25 @@
                     <thead>
                         <tr>
                             <th>منشن الديسكورد</th>
-                            <th>الاسم (عمود E)</th>
-                            <th>الأيدي (عمود F)</th>
-                            <th>رقم اليونت (عمود G)</th>
-                            <th>السجلات (عمود I)</th>
-                            <th>استحقاق الترقية</th>
+                            <th>الاسم</th>
+                            <th>الأيدي</th>
+                            <th>اليونت</th>
+                            <th>السجلات</th>
+                            <th>من رتبة ⬅️ إلى رتبة</th>
+                            <th>الاستحقاق</th>
                         </tr>
                     </thead>
                     <tbody id="filterTbody">
-                        <tr><td colspan="6" style="color: #777;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</td></tr>
+                        <tr><td colspan="7" style="color: #777;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="card" style="border-color: var(--success-color);">
-            <h3>✨ قائمة المستحقين المعتمدين حالياً (تصنيف تلقائي)</h3>
+            <h3>✨ قائمة المستحقين المعتمدين حالياً</h3>
             <div id="eligibleListContainer" style="background: #111; padding: 15px; border-radius: 6px; min-height: 50px;">
-                لا توجد عناصر محددة بـ "صح" بعد.
+                لا توجد عناصر مستحقة مطابقة للشروط بعد.
             </div>
         </div>
     </div>
@@ -275,6 +276,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
     let membersData = [];
     let eligibilityMap = {};
+    let memberTargetRank = {};
 
     window.onload = function() {
         const rulesTbody = document.getElementById('rulesTableBody');
@@ -331,13 +333,62 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             .then(data => {
                 document.getElementById('loadingArea').style.display = 'none';
                 membersData = data;
+                calculateEligibility();
                 renderFilterTable();
-                alert('تم جلب البيانات بنجاح!');
+                alert('تم جلب البيانات وفحص الاستحقاق بنجاح!');
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
                 alert('خطأ في جلب البيانات: ' + err);
             });
+    }
+
+    // حساب الاستحقاق بناءً على السجلات والدورات المطلوبة لكل رتبة
+    function calculateEligibility() {
+        eligibilityMap = {};
+        memberTargetRank = {};
+
+        membersData.forEach((row, index) => {
+            if(index === 0) return;
+            const discordVal = row[3] || '';
+            if(!discordVal) return;
+
+            const records = parseInt(row[8]) || 0;
+            let matchedRankIndex = -1;
+
+            // فحص من الأدنى للأعلى أو حسب رتبة العضو (هنا نفترض الفحص على أول رتبة مستحقة تطابق الشروط)
+            for(let rIdx = 0; rIdx < ranksList.length; rIdx++) {
+                const minRec = parseInt(localStorage.getItem('rule_rec_'+rIdx) || (rIdx === 0 ? 5 : 10));
+                const reqCourses = JSON.parse(localStorage.getItem('rule_courses_'+rIdx) || '[]');
+
+                // التحقق من السجلات
+                if(records >= minRec) {
+                    // التحقق من اجتياز جميع الدورات المطلوبة لهذه الرتبة
+                    let hasAllCourses = true;
+                    for(let cIdx of reqCourses) {
+                        const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
+                        // التأكد أن كود الديسكورد موجود في نص الدورة
+                        if(!courseText.includes(discordVal.trim())) {
+                            hasAllCourses = false;
+                            break;
+                        }
+                    }
+
+                    if(hasAllCourses) {
+                        matchedRankIndex = rIdx;
+                        break; // وجدنا أعلى/أول رتبة مستحقة
+                    }
+                }
+            }
+
+            if(matchedRankIndex !== -1) {
+                eligibilityMap[index] = true;
+                memberTargetRank[index] = ranksList[matchedRankIndex];
+            } else {
+                eligibilityMap[index] = false;
+                memberTargetRank[index] = '-';
+            }
+        });
     }
 
     function renderFilterTable() {
@@ -354,16 +405,21 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const id = row[5] || '';
             const unitId = row[6] || '';
             const records = parseInt(row[8]) || 0;
-
-            if(eligibilityMap[index] === undefined) eligibilityMap[index] = (records >= 5);
+            const isEligible = eligibilityMap[index] || false;
+            const rankTransition = memberTargetRank[index] || '-';
 
             tbody.innerHTML += `
                 <tr>
-                    <td>${discordVal}</td><td>${name}</td><td>${id}</td><td>${unitId}</td><td>${records}</td>
+                    <td>${discordVal}</td>
+                    <td>${name}</td>
+                    <td>${id}</td>
+                    <td>${unitId}</td>
+                    <td>${records}</td>
+                    <td style="color: #60a5fa; font-weight: bold;">${rankTransition}</td>
                     <td>
                         <select onchange="changeEligibility(${index}, this.value)" style="padding: 5px;">
-                            <option value="yes" ${eligibilityMap[index] ? 'selected' : ''}>صح (✅)</option>
-                            <option value="no" ${!eligibilityMap[index] ? 'selected' : ''}>خطأ (❌)</option>
+                            <option value="yes" ${isEligible ? 'selected' : ''}>صح (✅)</option>
+                            <option value="no" ${!isEligible ? 'selected' : ''}>خطأ (❌)</option>
                         </select>
                     </td>
                 </tr>`;
@@ -384,7 +440,15 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             if(index === 0) return;
             if(eligibilityMap[index] === true) {
                 count++;
-                html += `<div style="padding: 5px 0; border-bottom: 1px solid #333;">• ${row[4] || ''} (أيدي: ${row[5] || ''} | يونت: ${row[6] || ''}) - ${row[3] || ''}</div>`;
+                const discordVal = row[3] || '';
+                const name = row[4] || '';
+                const id = row[5] || '';
+                const unitId = row[6] || '';
+                const rankTrans = memberTargetRank[index] || '';
+
+                html += `<div style="padding: 6px 0; border-bottom: 1px solid #333; font-size: 14px;">
+                    • ${discordVal} | الاسم: <b>${name}</b> | أيدي: <b>${id}</b> | يونت: <b>${unitId}</b> | الترقية: <span style="color: #34d399;">${rankTrans}</span>
+                </div>`;
             }
         });
         container.innerHTML = count > 0 ? html : '<span style="color: #777;">لا توجد عناصر محددة بـ "صح" بعد.</span>';
@@ -434,11 +498,19 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             localStorage.setItem('rule_courses_'+index, JSON.stringify(selectedCourses));
         });
         alert('تم حفظ شروط الترقيات والدورات المطلوبة بنجاح! 💾');
+        if(membersData.length > 0) {
+            calculateEligibility();
+            renderFilterTable();
+        }
     }
 
     function saveCoursesData() {
         coursesList.forEach((_, index) => localStorage.setItem('course_'+index, document.getElementById('course_'+index).value));
         alert('تم حفظ بيانات جميع الدورات بنجاح! 💾');
+        if(membersData.length > 0) {
+            calculateEligibility();
+            renderFilterTable();
+        }
     }
 
     function executePromotions() {
