@@ -106,9 +106,35 @@
         .btn-danger { background-color: var(--danger-color); }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: center; font-size: 14px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: center; font-size: 14px; vertical-align: middle; }
         th { background-color: #252525; }
         .loading { text-align: center; padding: 20px; color: #f59e0b; }
+        
+        /* تصميم قائمة اختيار الدورات المتعددة */
+        .multi-select-container {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            max-height: 120px;
+            overflow-y: auto;
+            text-align: right;
+            padding: 5px 10px;
+        }
+        .multi-select-container label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            font-size: 13px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            color: #ddd;
+        }
+        .multi-select-container input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -142,12 +168,13 @@
     <div id="tab-rules" class="tab-content">
         <div class="card">
             <h3>⚖️ شروط الترقيات لجميع الرتب العسكرية</h3>
-            <p>حدد الحد الأدنى للسجلات المطلوبة (عمود I) لكل نقلة رتبة:</p>
+            <p>حدد الحد الأدنى للسجلات المطلوبة، والدورات اللازمة لكل ترقية:</p>
             <table>
                 <thead>
                     <tr>
-                        <th>الترقية من ⬅️ إلى</th>
-                        <th>السجلات المطلوبة (عمود I)</th>
+                        <th style="width: 25%;">الترقية من ⬅️ إلى</th>
+                        <th style="width: 25%;">السجلات المطلوبة (عمود I)</th>
+                        <th style="width: 50%;">الدورات المطلوبة (يمكنك اختيار أكثر من دورة)</th>
                     </tr>
                 </thead>
                 <tbody id="rulesTableBody"></tbody>
@@ -226,14 +253,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             <button onclick="copyText('previewSoldiersOutput')">📋 نسخ أكواد الأفراد للحافظة</button>
         </div>
 
-        <div class="card">
-            <h3>👁️ معاينة رسالة الديسكورد للترقيات</h3>
-            <textarea id="discordMsgTemplate">أولاً:
-صدور ترقيات للمذكورين أدناه، وذلك نظير جهودهم المميزة:
-{promotedList}</textarea>
-            <button onclick="copyText('discordMsgTemplate')">📋 نسخ رسالة الديسكورد</button>
-        </div>
-
         <div class="card" style="text-align: center;">
             <button class="btn-success" style="font-size: 18px; padding: 15px 30px;" onclick="executePromotions()">✅ تم الترقية (تحديث الجدول الأساسي)</button>
         </div>
@@ -261,7 +280,25 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const rulesTbody = document.getElementById('rulesTableBody');
         ranksList.forEach((rank, index) => {
             const savedVal = localStorage.getItem('rule_rec_'+index) || (index === 0 ? 5 : 10);
-            rulesTbody.innerHTML += `<tr><td>${rank}</td><td><input type="number" id="rule_rec_${index}" value="${savedVal}"></td></tr>`;
+            const savedCourses = JSON.parse(localStorage.getItem('rule_courses_'+index) || '[]');
+            
+            let coursesCheckboxes = '<div class="multi-select-container">';
+            coursesList.forEach((course, cIdx) => {
+                const isChecked = savedCourses.includes(cIdx) ? 'checked' : '';
+                coursesCheckboxes += `
+                    <label>
+                        <input type="checkbox" class="rule-course-cb-${index}" value="${cIdx}" ${isChecked}>
+                        ${course}
+                    </label>`;
+            });
+            coursesCheckboxes += '</div>';
+
+            rulesTbody.innerHTML += `
+                <tr>
+                    <td>${rank}</td>
+                    <td><input type="number" id="rule_rec_${index}" value="${savedVal}"></td>
+                    <td>${coursesCheckboxes}</td>
+                </tr>`;
         });
 
         const coursesContainer = document.getElementById('coursesGridContainer');
@@ -389,8 +426,14 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     }
 
     function saveRulesData() {
-        ranksList.forEach((_, index) => localStorage.setItem('rule_rec_'+index, document.getElementById('rule_rec_'+index).value));
-        alert('تم حفظ شروط الترقيات بنجاح! 💾');
+        ranksList.forEach((_, index) => {
+            localStorage.setItem('rule_rec_'+index, document.getElementById('rule_rec_'+index).value);
+            
+            const checkboxes = document.querySelectorAll(`.rule-course-cb-${index}:checked`);
+            const selectedCourses = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            localStorage.setItem('rule_courses_'+index, JSON.stringify(selectedCourses));
+        });
+        alert('تم حفظ شروط الترقيات والدورات المطلوبة بنجاح! 💾');
     }
 
     function saveCoursesData() {
