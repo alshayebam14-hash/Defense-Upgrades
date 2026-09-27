@@ -374,7 +374,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     let membersData = [];
     let eligibleMembers = {}; 
     let promotedStatus = {};  
-    let currentFilter = 'all'; // التصفية الافتراضية: عرض الكل
+    let currentFilter = 'all'; 
 
     window.onload = function() {
         renderRulesTable();
@@ -627,7 +627,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         for(let index in eligibleMembers) {
             const m = eligibleMembers[index];
             
-            // تطبيق فلتر التصفية (لو تم اختيار "المستوفون فقط" وكان العسكري غير مستوفي، يتم تجاوزه)
             if (currentFilter === 'eligible' && !m.isEligible) {
                 continue;
             }
@@ -648,6 +647,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             if (m.isEligible) {
                 reasonsHTML = `<span style="color: #34d399;">جاهز للترقية تماماً (سجلات ودورات مطابقة)</span>`;
             }
+
+            // توليد صيغة الأيدي بالطريقة المطلوبة <@id>
+            const extractedId = cleanId(m.id) || cleanId(m.discord);
+            const discordDisplay = extractedId ? `<@${extractedId}>` : (m.discord || '---');
 
             const cardHTML = `
                 <div class="soldier-card ${isPromoted ? 'promoted' : (m.isEligible ? '' : 'not-eligible')}" id="card-${index}">
@@ -678,8 +681,8 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                         <span>حالة الدورات والشروط:</span>
                         <div style="color: #ddd; margin-top: 3px;">${reasonsHTML}</div>
                     </div>
-                    <div style="font-size: 11px; color: #888; text-align: center; word-break: break-all;">
-                        ديسكورد: ${m.discord}
+                    <div style="font-size: 12px; color: #60a5fa; text-align: center; word-break: break-all; font-family: monospace;">
+                        ديسكورد: ${discordDisplay}
                     </div>
                     <div class="card-actions">
                         ${!isPromoted ? `
@@ -723,7 +726,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 const m = eligibleMembers[index];
                 if(!m) continue;
 
-                const cleanDiscordId = cleanId(m.discord) || m.id;
+                const cleanDiscordId = cleanId(m.id) || cleanId(m.discord);
 
                 const formatted = (template) => template
                     .replace(/{discordId}/g, cleanDiscordId)
