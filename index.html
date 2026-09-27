@@ -255,8 +255,8 @@
     <!-- 3. تبويب الدورات -->
     <div id="tab-courses" class="tab-content">
         <div class="card">
-            <h3>🎖️ إدخال أكواد الحاصلين على الدورات</h3>
-            <p style="color: #aaa; font-size: 13px;">ضع ايدي ديسكورد أو أرقام العساكر في كل دورة (يتم حفظها تلقائياً أولاً بأول)</p>
+            <h3>🎖️ إدخال أيدي العساكر الحاصلين على الدورات</h3>
+            <p style="color: #aaa; font-size: 13px;">ضع الأيدي مباشرة (مثل: 777) في كل دورة (يتم حفظها تلقائياً أولاً بأول)</p>
             <div class="courses-grid" id="coursesGridContainer"></div>
             <button onclick="saveCoursesToStorage(); alert('تم حفظ الدورات بنجاح!');" class="btn-success" style="margin-top: 15px;">💾 حفظ يدوياً وتحديث الفحص</button>
         </div>
@@ -394,7 +394,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             coursesContainer.innerHTML += `
                 <div class="course-box">
                     <h4>${course}</h4>
-                    <textarea id="course_input_${index}" oninput="saveCoursesToStorage()">${savedValue}</textarea>
+                    <textarea id="course_input_${index}" oninput="saveCoursesToStorage()" placeholder="اكتب الأيدي هنا (مثال: 777)...">${savedValue}</textarea>
                 </div>
             `;
         });
@@ -454,28 +454,31 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             });
     }
 
-    // تنظيف الأيدي واستخراج الأرقام بدقة (يتعامل مع أي صياغة مقلوبة مثل <id@> أو <@id>)
+    // دالة استخراج الأرقام الصرفة من النص
     function cleanId(str) {
         if (!str) return '';
-        // استخراج أول مجموعة أرقام صحيحة من النص بغض النظر عن موقع الرموز والـ @
-        const matches = str.match(/\d+/g);
+        const matches = String(str).match(/\d+/g);
         return matches ? matches.join('') : '';
     }
 
-    function memberHasCourse(memberDiscord, memberName, memberId, courseIndex) {
+    // التحقق من امتلاك العسكري للدورة بناءً على مقارنة الأيدي حصرياً
+    function memberHasCourse(memberId, courseIndex) {
         const textarea = document.getElementById(`course_input_${courseIndex}`);
         if (!textarea) return false;
+        
         const text = textarea.value;
-        
-        // تقسيم الأسطر وتنظيف كل أيدي في القائمة
-        const lines = text.split('\n').map(l => cleanId(l)).filter(l => l.length > 0);
-        
-        const cleanDiscord = cleanId(memberDiscord);
-        const cleanMilitaryId = cleanId(String(memberId));
+        const cleanMemberId = cleanId(memberId);
+        if (!cleanMemberId) return false;
 
-        return (cleanDiscord && lines.includes(cleanDiscord)) || 
-               (cleanMilitaryId && lines.includes(cleanMilitaryId)) || 
-               lines.some(l => memberName.includes(l));
+        // تقسيم الأسطر أو الكلمات في صندوق الدورة واستخراج الأرقام الصرفة لكل سطر
+        const lines = text.split('\n');
+        for (let line of lines) {
+            const lineCleanId = cleanId(line);
+            if (lineCleanId === cleanMemberId) {
+                return true; // الأيدي مطابق وموجود في الدورة
+            }
+        }
+        return false;
     }
 
     function calculateEligibility() {
@@ -518,11 +521,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const currentRank = String(row[rankIdx] || '').trim();
             const memberName = String(row[nameIdx] || '').trim();
             const rawDiscord = String(row[discordIdx] || '').trim();
-            const memberId = String(row[idIdx] || '').trim();
+            const memberId = String(row[idIdx] || '').trim(); // الأيدي الأساسي في الجدول (مثل 777)
             const unitId = String(row[unitIdx] || '').trim();
             const currentRecords = parseInt(row[recordsIdx]) || 0;
 
-            // فلترة دقيقة لاستبعاد الصفوف الفارغة أو الوهمية
             if (!memberName || memberName === 'عسكري' || memberName === '---' || (!memberId && !rawDiscord)) {
                 continue;
             }
@@ -540,17 +542,18 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 let cRule = promotionRules[step].courseIndex;
                 if (cRule === 'all') {
                     for (let ci = 0; ci < coursesList.length; ci++) {
-                        if (!memberHasCourse(rawDiscord, memberName, memberId, ci)) {
+                        // الفحص باستخدام الأيدي الخاص بالعسكري (memberId أو rawDiscord)
+                        if (!memberHasCourse(memberId, ci) && !memberHasCourse(rawDiscord, ci)) {
                             if (!missingCourses.includes(coursesList[ci])) missingCourses.push(coursesList[ci]);
                         }
                     }
                 } else if (Array.isArray(cRule)) {
-                    let hasOne = cRule.some(ci => memberHasCourse(rawDiscord, memberName, memberId, ci));
+                    let hasOne = cRule.some(ci => memberHasCourse(memberId, ci) || memberHasCourse(rawDiscord, ci));
                     if (!hasOne) {
                         missingCourses.push(cRule.map(ci => coursesList[ci]).join(' أو '));
                     }
                 } else if (cRule !== -1) {
-                    if (!memberHasCourse(rawDiscord, memberName, memberId, cRule)) {
+                    if (!memberHasCourse(memberId, cRule) && !memberHasCourse(rawDiscord, cRule)) {
                         if (!missingCourses.includes(coursesList[cRule])) missingCourses.push(coursesList[cRule]);
                     }
                 }
@@ -678,7 +681,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 const m = eligibleMembers[index];
                 if(!m) continue;
 
-                const cleanDiscordId = cleanId(m.discord) || m.discord;
+                const cleanDiscordId = cleanId(m.discord) || m.id;
 
                 const formatted = (template) => template
                     .replace(/{discordId}/g, cleanDiscordId)
