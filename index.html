@@ -198,7 +198,7 @@
     <!-- 4. تبويب الترقيات -->
     <div id="tab-promotions" class="tab-content">
         <div class="card">
-            <h3>📋 فحص وفلترة المستحقين للترقية (من الصف 43 فما دون)</h3>
+            <h3>📋 فحص وفلترة المستحقين للترقية (من الصف 43 فما تحته)</h3>
             <div style="overflow-x: auto;">
                 <table id="filterTable">
                     <thead>
@@ -282,7 +282,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
     window.onload = function() {
         const rulesTbody = document.getElementById('rulesTableBody');
-        // عرض الترقيات المتتالية (من رتبة إلى الرتبة التي تليها)
         for(let i = 0; i < ranksList.length - 1; i++) {
             const rankPair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
             const savedVal = localStorage.getItem('rule_rec_'+i) || (i === 0 ? 5 : 10);
@@ -339,7 +338,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 membersData = data;
                 calculateEligibility();
                 renderFilterTable();
-                alert('تم جلب البيانات وفحص الاستحقاق (حتى الصف 43) بنجاح!');
+                alert('تم جلب البيانات وفحص الاستحقاق (من صف 43 وتحت) بنجاح!');
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
@@ -353,14 +352,14 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         memberCurrentRank = {};
 
         membersData.forEach((row, index) => {
-            if(index === 0) return;
-            // الشرط: جلب البيانات من الصف 43 فما دون (index من 1 إلى 43 في المصفوفة البشرية)
-            if(index > 43) return;
+            // التعديل: تخطي الصفوف أقل من 43 (يعني البدء من صف 43 فما تحته)
+            // ملاحظة: index يبدأ من 0 (الهيدر)، لذا صف 43 في الإكسل يوافق index 42 في المصفوفة (أو حسب ترتيب صفوفك الفعلي، إذا كان الهيدر صف 1 والصفوف تبدأ من 2، فـ index 42 هو الصف 43).
+            if(index < 42) return; 
 
             const discordVal = row[3] || '';
             if(!discordVal) return;
 
-            const currentRank = (row[2] || '').trim(); // الرتبة الحالية من عمود C
+            const currentRank = (row[2] || '').trim(); // قراءة الرتبة الحالية من عمود C
             memberCurrentRank[index] = currentRank;
 
             const rankIdx = ranksList.findIndex(r => r === currentRank);
@@ -374,10 +373,8 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const minRec = parseInt(localStorage.getItem('rule_rec_'+rankIdx) || 10);
             const reqCourses = JSON.parse(localStorage.getItem('rule_courses_'+rankIdx) || '[]');
 
-            // التحقق من السجلات
             let isEligible = (records >= minRec);
 
-            // التحقق من الدورات المطلوبة
             if(isEligible) {
                 for(let cIdx of reqCourses) {
                     const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
@@ -399,8 +396,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         if(!membersData || membersData.length === 0) return;
 
         membersData.forEach((row, index) => {
-            if(index === 0) return;
-            if(index > 43) return; // فلترة الصف 43 وما يليه
+            if(index < 42) return; // تخطي ما قبل الصف 43
 
             const discordVal = row[3] || '';
             if(!discordVal) return;
@@ -443,7 +439,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         let html = '', count = 0;
 
         membersData.forEach((row, index) => {
-            if(index === 0 || index > 43) return;
+            if(index < 42) return;
             if(eligibilityMap[index] === true) {
                 count++;
                 const discordVal = row[3] || '';
@@ -466,7 +462,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         let officersOutput = '', soldiersOutput = '';
 
         membersData.forEach((row, index) => {
-            if(index === 0 || index > 43) return;
+            if(index < 42) return;
             if(eligibilityMap[index] === true) {
                 const discordVal = row[3] || '';
                 const name = row[4] || '';
