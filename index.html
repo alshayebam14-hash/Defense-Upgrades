@@ -211,13 +211,13 @@
 <div class="container">
     <header>
         <h1>🛡️ نظام إدارة وترقيات القطاع العسكري</h1>
-        <p>نظام الشروط التراكمية (السجلات + الدورات السابقة مرتبة)</p>
+        <p>نظام الشروط التراكمية (السجلات + الدورات السابقة)</p>
     </header>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(event, 'tab-connection')">🔗 الاتصال والبيانات</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-rules')">⚖️ شروط الترقيات (التراكمية)</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-courses')">🎖️ إدارة الدورات (أكواد الحاصلين)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-courses')">🎖️ إدارة الدورات (محفوظة تلقائياً)</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-promotions')">⭐ فحص واستحقاق الترقيات</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-output')">👁️ المعاينة والمخرجات</button>
     </div>
@@ -256,9 +256,9 @@
     <div id="tab-courses" class="tab-content">
         <div class="card">
             <h3>🎖️ إدخال أكواد الحاصلين على الدورات</h3>
-            <p style="color: #aaa; font-size: 13px;">ضع ايدي ديسكورد أو أرقام العساكر في كل دورة (كل عسكري في سطر أو مفصولين بفواصل)</p>
+            <p style="color: #aaa; font-size: 13px;">ضع ايدي ديسكورد أو أرقام العساكر في كل دورة (يتم حفظها تلقائياً أولاً بأول)</p>
             <div class="courses-grid" id="coursesGridContainer"></div>
-            <button onclick="calculateEligibility(); alert('تم حفظ الدورات وإعادة الفحص بنجاح!');" class="btn-success" style="margin-top: 15px;">💾 حفظ الدورات وتطبيق الفحص</button>
+            <button onclick="saveCoursesToStorage(); alert('تم حفظ الدورات بنجاح!');" class="btn-success" style="margin-top: 15px;">💾 حفظ يدوياً وتحديث الفحص</button>
         </div>
     </div>
 
@@ -313,7 +313,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         "عقيد", "عميد", "لواء", "فريق", "فريق اول"
     ];
 
-    // قائمة الدورات بحسب الترتيب
     const coursesList = [
         "فرد أساس",                  // 0
         "دورة العمليات",              // 1
@@ -325,25 +324,23 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         "الصقور الجوية"              // 7
     ];
 
-    // الشروط لكل رتبة (السجلات والدورة الجديدة الخاصة بهذه النقلة)
-    // index يوافق انتقال من ranksList[i] إلى ranksList[i+1]
     const promotionRules = [
-        { minRecords: 30, courseIndex: 0 }, // جندي إلى جندي أول (فرد أساس)
-        { minRecords: 50, courseIndex: -1 },// جندي أول إلى عريف (بدون دورة جديدة، لكنها ترث فرد أساس)
-        { minRecords: 70, courseIndex: -1 },// عريف إلى وكيل رقيب
-        { minRecords: 90, courseIndex: -1 },// وكيل رقيب إلى رقيب (تم إلغاء مسؤول القبول)
-        { minRecords: 110, courseIndex: 1 },// رقيب إلى رقيب أول (دورة العمليات)
-        { minRecords: 130, courseIndex: -1 },// رقيب أول إلى رئيس رقباء
-        { minRecords: 50, courseIndex: [2, 3] }, // رئيس رقباء إلى ملازم (الإسعافات / تأهيل الضباط)
-        { minRecords: 70, courseIndex: 4 }, // ملازم إلى ملازم أول (المظلات المشتركة)
-        { minRecords: 90, courseIndex: -1 },// ملازم أول إلى نقيب (تم إلغاء المدرب العسكري)
-        { minRecords: 110, courseIndex: [5, 6] },// نقيب إلى رائد (الصاعقة / الضفادع البشرية)
-        { minRecords: 130, courseIndex: 7 },// رائد إلى مقدم (الصقور الجوية)
-        { minRecords: 65, courseIndex: 'all' }, // مقدم إلى عقيد (جميع الدورات السابقة)
-        { minRecords: 55, courseIndex: 'all' }, // عقيد إلى عميد (جميع الدورات السابقة)
-        { minRecords: 40, courseIndex: 'all' }, // عميد إلى لواء (جميع الدورات السابقة)
-        { minRecords: 0,  courseIndex: 'all' }, // لواء إلى فريق
-        { minRecords: 0,  courseIndex: 'all' }  // فريق إلى فريق أول
+        { minRecords: 30, courseIndex: 0 }, 
+        { minRecords: 50, courseIndex: -1 },
+        { minRecords: 70, courseIndex: -1 },
+        { minRecords: 90, courseIndex: -1 },
+        { minRecords: 110, courseIndex: 1 },
+        { minRecords: 130, courseIndex: -1 },
+        { minRecords: 50, courseIndex: [2, 3] }, 
+        { minRecords: 70, courseIndex: 4 }, 
+        { minRecords: 90, courseIndex: -1 },
+        { minRecords: 110, courseIndex: [5, 6] },
+        { minRecords: 130, courseIndex: 7 },
+        { minRecords: 65, courseIndex: 'all' }, 
+        { minRecords: 55, courseIndex: 'all' }, 
+        { minRecords: 40, courseIndex: 'all' }, 
+        { minRecords: 0,  courseIndex: 'all' }, 
+        { minRecords: 0,  courseIndex: 'all' }  
     ];
 
     let membersData = [];
@@ -362,8 +359,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const rule = promotionRules[i];
             const pair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
             const rec = rule.minRecords > 0 ? `${rule.minRecords} سجل` : 'بدون شرط';
-            
-            // تحديد الدورات التراكمية لهذه الرتبة للعرض
             let requiredCoursesText = getRequiredCoursesNamesString(i);
 
             rulesTbody.innerHTML += `
@@ -387,7 +382,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 list.push(coursesList[c]);
             }
         }
-        // إزالة التكرار
         let unique = [...new Set(list)];
         return unique.length > 0 ? unique.join(' + ') : 'تعتمد على دورات الرتب السابقة فقط';
     }
@@ -396,13 +390,26 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const coursesContainer = document.getElementById('coursesGridContainer');
         coursesContainer.innerHTML = '';
         coursesList.forEach((course, index) => {
+            // استرجاع البيانات المخزنة مسبقاً من localStorage إذا وجدت
+            const savedValue = localStorage.getItem(`course_input_${index}`) || '';
             coursesContainer.innerHTML += `
                 <div class="course-box">
                     <h4>${course}</h4>
-                    <textarea id="course_input_${index}" placeholder="اكتب ايديات الديسكورد هنا (كل ايدي في سطر)..."></textarea>
+                    <textarea id="course_input_${index}" oninput="saveCoursesToStorage()">${savedValue}</textarea>
                 </div>
             `;
         });
+    }
+
+    // حفظ الدورات تلقائياً في المتصفح
+    function saveCoursesToStorage() {
+        coursesList.forEach((course, index) => {
+            const textarea = document.getElementById(`course_input_${index}`);
+            if (textarea) {
+                localStorage.setItem(`course_input_${index}`, textarea.value);
+            }
+        });
+        calculateEligibility();
     }
 
     function switchTab(evt, tabId) {
@@ -455,7 +462,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         return match ? match[1] : str.replace(/\D/g, '');
     }
 
-    // التحقق هل العسكري يمتلك دورة معينة
     function memberHasCourse(memberDiscord, memberName, memberId, courseIndex) {
         const textarea = document.getElementById(`course_input_${courseIndex}`);
         if (!textarea) return false;
@@ -499,44 +505,42 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         if (nameIdx === -1) nameIdx = 2;
         if (idIdx === -1) idIdx = 3;
         if (unitIdx === -1) unitIdx = 4;
-        if (recordsIdx === -1) recordsIdx = 5; // عمود السجلات الافتراضي
+        if (recordsIdx === -1) recordsIdx = 5;
 
         for (let i = headerRowIndex + 1; i < membersData.length; i++) {
             const row = membersData[i];
             if (!row || row.length === 0) continue;
 
             const currentRank = String(row[rankIdx] || '').trim();
-            const memberName = String(row[nameIdx] || 'عسكري').trim();
+            const memberName = String(row[nameIdx] || '').trim();
             const rawDiscord = String(row[discordIdx] || '').trim();
-            const memberId = String(row[idIdx] || '---').trim();
-            const unitId = String(row[unitIdx] || '---').trim();
+            const memberId = String(row[idIdx] || '').trim();
+            const unitId = String(row[unitIdx] || '').trim();
             const currentRecords = parseInt(row[recordsIdx]) || 0;
 
-            if (!currentRank && !memberName) continue;
+            // 🛑 فلترة دقيقة: استبعاد الصفوف الفارغة التي بلا اسم أو هوية حقيقية
+            if (!memberName || memberName === 'عسكري' || memberName === '---' || (!memberId && !rawDiscord)) {
+                continue;
+            }
 
             let rankIndex = ranksList.findIndex(r => currentRank.includes(r));
             if (rankIndex === -1) rankIndex = 0;
 
-            if (rankIndex >= ranksList.length - 1) continue; // وصل لأعلى رتبة
+            if (rankIndex >= ranksList.length - 1) continue; 
 
             const rule = promotionRules[rankIndex];
-            
-            // 1. فحص السجلات
             let passedRecords = currentRecords >= rule.minRecords;
 
-            // 2. فحص الدورات التراكمية المطلوبة لهذه الرتبة وما قبلها
             let missingCourses = [];
             for (let step = 0; step <= rankIndex; step++) {
                 let cRule = promotionRules[step].courseIndex;
                 if (cRule === 'all') {
-                    // فحص كل الدورات السابقة
                     for (let ci = 0; ci < coursesList.length; ci++) {
                         if (!memberHasCourse(rawDiscord, memberName, memberId, ci)) {
                             if (!missingCourses.includes(coursesList[ci])) missingCourses.push(coursesList[ci]);
                         }
                     }
                 } else if (Array.isArray(cRule)) {
-                    // يحتاج إحدى الدورتين (مثل الإسعافات أو تأهيل الضباط)
                     let hasOne = cRule.some(ci => memberHasCourse(rawDiscord, memberName, memberId, ci));
                     if (!hasOne) {
                         missingCourses.push(cRule.map(ci => coursesList[ci]).join(' أو '));
@@ -555,7 +559,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 discord: rawDiscord,
                 name: memberName,
                 id: memberId,
-                unitId: unitId,
+                unitId: unitId || '---',
                 currentRank: currentRank || ranksList[0],
                 targetRank: `${ranksList[rankIndex]} ⬅️ ${ranksList[rankIndex+1]}`,
                 currentRecords: currentRecords,
@@ -648,7 +652,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
 
         if(eligibleCount === 0) {
-            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر.</div>';
+            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مطابقة.</div>';
         }
         if(promotedCount === 0) {
             promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم اعتماد أي ترقية بعد.</div>';
