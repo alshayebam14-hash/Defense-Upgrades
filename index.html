@@ -58,6 +58,26 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .filter-btn {
+            background-color: #2a2a2a;
+            color: #aaa;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
         .courses-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -266,7 +286,15 @@
     <div id="tab-promotions" class="tab-content">
         <div class="card">
             <h3>📋 حالة استحقاق العساكر للترقية</h3>
+            
+            <!-- أزرار التصفية -->
+            <div class="filter-buttons">
+                <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">عرض الكل</button>
+                <button class="filter-btn" id="filter-eligible" onclick="setFilter('eligible')">المستوفون للشروط فقط ✅</button>
+            </div>
+
             <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 تحديث وفحص العساكر</button>
+            
             <div class="cards-grid" id="eligibleCardsContainer">
                 <div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">الرجاء جلب البيانات أولاً من تبويب الاتصال.</div>
             </div>
@@ -346,11 +374,23 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     let membersData = [];
     let eligibleMembers = {}; 
     let promotedStatus = {};  
+    let currentFilter = 'all'; // التصفية الافتراضية: عرض الكل
 
     window.onload = function() {
         renderRulesTable();
         renderCoursesInputs();
     };
+
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        if(filterType === 'all') {
+            document.getElementById('filter-all').classList.add('active');
+        } else {
+            document.getElementById('filter-eligible').classList.add('active');
+        }
+        renderCards();
+    }
 
     function renderRulesTable() {
         const rulesTbody = document.getElementById('rulesTableBody');
@@ -454,14 +494,12 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             });
     }
 
-    // دالة استخراج الأرقام الصرفة من النص
     function cleanId(str) {
         if (!str) return '';
         const matches = String(str).match(/\d+/g);
         return matches ? matches.join('') : '';
     }
 
-    // التحقق من امتلاك العسكري للدورة بناءً على مقارنة الأيدي حصرياً
     function memberHasCourse(memberId, courseIndex) {
         const textarea = document.getElementById(`course_input_${courseIndex}`);
         if (!textarea) return false;
@@ -470,12 +508,11 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const cleanMemberId = cleanId(memberId);
         if (!cleanMemberId) return false;
 
-        // تقسيم الأسطر أو الكلمات في صندوق الدورة واستخراج الأرقام الصرفة لكل سطر
         const lines = text.split('\n');
         for (let line of lines) {
             const lineCleanId = cleanId(line);
             if (lineCleanId === cleanMemberId) {
-                return true; // الأيدي مطابق وموجود في الدورة
+                return true; 
             }
         }
         return false;
@@ -521,7 +558,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const currentRank = String(row[rankIdx] || '').trim();
             const memberName = String(row[nameIdx] || '').trim();
             const rawDiscord = String(row[discordIdx] || '').trim();
-            const memberId = String(row[idIdx] || '').trim(); // الأيدي الأساسي في الجدول (مثل 777)
+            const memberId = String(row[idIdx] || '').trim();
             const unitId = String(row[unitIdx] || '').trim();
             const currentRecords = parseInt(row[recordsIdx]) || 0;
 
@@ -542,7 +579,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 let cRule = promotionRules[step].courseIndex;
                 if (cRule === 'all') {
                     for (let ci = 0; ci < coursesList.length; ci++) {
-                        // الفحص باستخدام الأيدي الخاص بالعسكري (memberId أو rawDiscord)
                         if (!memberHasCourse(memberId, ci) && !memberHasCourse(rawDiscord, ci)) {
                             if (!missingCourses.includes(coursesList[ci])) missingCourses.push(coursesList[ci]);
                         }
@@ -590,6 +626,12 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
         for(let index in eligibleMembers) {
             const m = eligibleMembers[index];
+            
+            // تطبيق فلتر التصفية (لو تم اختيار "المستوفون فقط" وكان العسكري غير مستوفي، يتم تجاوزه)
+            if (currentFilter === 'eligible' && !m.isEligible) {
+                continue;
+            }
+
             const isPromoted = promotedStatus[index] || false;
 
             let statusBadge = m.isEligible ? 
@@ -659,7 +701,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
 
         if(eligibleCount === 0) {
-            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مطابقة.</div>';
+            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مطابقة حسب التصفية الحالية.</div>';
         }
         if(promotedCount === 0) {
             promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم اعتماد أي ترقية بعد.</div>';
