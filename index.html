@@ -390,7 +390,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const coursesContainer = document.getElementById('coursesGridContainer');
         coursesContainer.innerHTML = '';
         coursesList.forEach((course, index) => {
-            // استرجاع البيانات المخزنة مسبقاً من localStorage إذا وجدت
             const savedValue = localStorage.getItem(`course_input_${index}`) || '';
             coursesContainer.innerHTML += `
                 <div class="course-box">
@@ -401,7 +400,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         });
     }
 
-    // حفظ الدورات تلقائياً في المتصفح
     function saveCoursesToStorage() {
         coursesList.forEach((course, index) => {
             const textarea = document.getElementById(`course_input_${index}`);
@@ -456,22 +454,28 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             });
     }
 
+    // تنظيف الأيدي واستخراج الأرقام بدقة (يتعامل مع أي صياغة مقلوبة مثل <id@> أو <@id>)
     function cleanId(str) {
         if (!str) return '';
-        const match = str.match(/<@!?(\d+)>/);
-        return match ? match[1] : str.replace(/\D/g, '');
+        // استخراج أول مجموعة أرقام صحيحة من النص بغض النظر عن موقع الرموز والـ @
+        const matches = str.match(/\d+/g);
+        return matches ? matches.join('') : '';
     }
 
     function memberHasCourse(memberDiscord, memberName, memberId, courseIndex) {
         const textarea = document.getElementById(`course_input_${courseIndex}`);
         if (!textarea) return false;
         const text = textarea.value;
+        
+        // تقسيم الأسطر وتنظيف كل أيدي في القائمة
         const lines = text.split('\n').map(l => cleanId(l)).filter(l => l.length > 0);
         
         const cleanDiscord = cleanId(memberDiscord);
         const cleanMilitaryId = cleanId(String(memberId));
 
-        return lines.includes(cleanDiscord) || lines.includes(cleanMilitaryId) || lines.some(l => memberName.includes(l));
+        return (cleanDiscord && lines.includes(cleanDiscord)) || 
+               (cleanMilitaryId && lines.includes(cleanMilitaryId)) || 
+               lines.some(l => memberName.includes(l));
     }
 
     function calculateEligibility() {
@@ -518,7 +522,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const unitId = String(row[unitIdx] || '').trim();
             const currentRecords = parseInt(row[recordsIdx]) || 0;
 
-            // 🛑 فلترة دقيقة: استبعاد الصفوف الفارغة التي بلا اسم أو هوية حقيقية
+            // فلترة دقيقة لاستبعاد الصفوف الفارغة أو الوهمية
             if (!memberName || memberName === 'عسكري' || memberName === '---' || (!memberId && !rawDiscord)) {
                 continue;
             }
