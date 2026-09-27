@@ -12,6 +12,7 @@
             --primary-color: #3b82f6;
             --success-color: #10b981;
             --danger-color: #ef4444;
+            --warning-color: #f59e0b;
             --border-color: #333;
         }
         body {
@@ -122,12 +123,16 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .soldier-card.promoted {
             border-color: var(--success-color);
             background-color: #1a2e26;
+        }
+        .soldier-card.not-eligible {
+            border-color: var(--danger-color);
+            background-color: #2a1a1a;
         }
         .card-header-row {
             display: flex;
@@ -144,30 +149,37 @@
             font-size: 13px;
         }
         .avatar-box {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             background: #333;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
         }
         .card-body-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
         .info-box {
             background: #1a1a1a;
             border: 1px solid #333;
-            padding: 8px;
+            padding: 6px;
             border-radius: 6px;
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
         }
-        .info-box span { display: block; color: #888; font-size: 11px; margin-bottom: 2px; }
+        .info-box span { display: block; color: #888; font-size: 10px; margin-bottom: 2px; }
         .info-box b { color: #fff; }
+        .reasons-box {
+            background: #111;
+            border: 1px dashed #444;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
         .card-actions {
             display: flex;
             gap: 10px;
@@ -185,7 +197,7 @@
             border-radius: 6px;
             font-family: monospace;
             font-size: 12px;
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
             margin-top: 10px;
             border: 1px solid #333;
@@ -199,14 +211,14 @@
 <div class="container">
     <header>
         <h1>🛡️ نظام إدارة وترقيات القطاع العسكري</h1>
-        <p>إدارة الشروط، الدورات الأفقية، الفلترة، وصيغ الأكواد والترقيات بذكاء</p>
+        <p>نظام الشروط التراكمية (السجلات + الدورات السابقة مرتبة)</p>
     </header>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(event, 'tab-connection')">🔗 الاتصال والبيانات</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-rules')">⚖️ صفحة الشروط</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-courses')">🎖️ صفحة الدورات</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-promotions')">⭐ مستحقو الترقية (المرشحون)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-rules')">⚖️ شروط الترقيات (التراكمية)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-courses')">🎖️ إدارة الدورات (أكواد الحاصلين)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-promotions')">⭐ فحص واستحقاق الترقيات</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-output')">👁️ المعاينة والمخرجات</button>
     </div>
 
@@ -218,7 +230,7 @@
             <button onclick="loadData()">🔄 جلب بيانات العساكر من الجدول</button>
             <div id="loadingArea" class="loading" style="display: none;">جاري جلب البيانات من الجدول... ⏳</div>
             <div id="connectionStatus" style="margin-top: 15px; font-weight: bold; color: #60a5fa;"></div>
-            <label style="margin-top: 15px;">سجل التشخيص المفصل (مهم لمعرفة كيف يقرأ الكود جدولك):</label>
+            <label style="margin-top: 15px;">سجل التشخيص المفصل:</label>
             <div id="debugLog">سجل تشخيص البيانات سيظهر هنا بعد الجلب...</div>
         </div>
     </div>
@@ -226,13 +238,13 @@
     <!-- 2. تبويب الشروط -->
     <div id="tab-rules" class="tab-content">
         <div class="card">
-            <h3>⚖️ شروط الترقيات لجميع الرتب العسكرية</h3>
-            <p>تم إزالة القيود مؤقتاً لتظهر لك كل الأسماء المتاحة في الجدول:</p>
+            <h3>⚖️ الشروط المطلوبة لكل ترقية (تراكمية)</h3>
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 30%;">الرتبة الحالية ⬅️ التالية</th>
-                        <th style="width: 70%;">الحالة (بدون شروط معقدة حالياً)</th>
+                        <th style="width: 25%;">الرتبة الانتقالية</th>
+                        <th style="width: 15%;">السجلات المطلوبة</th>
+                        <th style="width: 60%;">الدورات الإلزامية المطلوبة (متراكمة)</th>
                     </tr>
                 </thead>
                 <tbody id="rulesTableBody"></tbody>
@@ -243,18 +255,20 @@
     <!-- 3. تبويب الدورات -->
     <div id="tab-courses" class="tab-content">
         <div class="card">
-            <h3>🎖️ إدارة الدورات واجتياز الأعضاء (اختياري)</h3>
+            <h3>🎖️ إدخال أكواد الحاصلين على الدورات</h3>
+            <p style="color: #aaa; font-size: 13px;">ضع ايدي ديسكورد أو أرقام العساكر في كل دورة (كل عسكري في سطر أو مفصولين بفواصل)</p>
             <div class="courses-grid" id="coursesGridContainer"></div>
+            <button onclick="calculateEligibility(); alert('تم حفظ الدورات وإعادة الفحص بنجاح!');" class="btn-success" style="margin-top: 15px;">💾 حفظ الدورات وتطبيق الفحص</button>
         </div>
     </div>
 
     <!-- 4. تبويب الترقيات -->
     <div id="tab-promotions" class="tab-content">
         <div class="card">
-            <h3>📋 العساكر المستحقون للترقية</h3>
-            <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 إعادة فحص وعرض المرشحين</button>
+            <h3>📋 حالة استحقاق العساكر للترقية</h3>
+            <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 تحديث وفحص العساكر</button>
             <div class="cards-grid" id="eligibleCardsContainer">
-                <div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</div>
+                <div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">الرجاء جلب البيانات أولاً من تبويب الاتصال.</div>
             </div>
         </div>
 
@@ -269,29 +283,23 @@
     <!-- 5. تبويب المعاينة والمخرجات -->
     <div id="tab-output" class="tab-content">
         <div class="card" style="border-color: #60a5fa;">
-            <h3>⭐ تخصيص ومعاينة أكواد وضباط القطاع</h3>
-            <label>صيغة أكواد الضباط:</label>
+            <h3>⭐ صيغة أكواد الضباط</h3>
             <textarea id="officersTemplate"><@discordId>
 GR ⭐ M-{unitId} {name} {id}</textarea>
-            
-            <label style="margin-top: 15px;">معاينة أكواد الضباط الجاهزة للنسخ:</label>
-            <textarea id="previewOfficersOutput" readonly style="height: 120px; background: #111;"></textarea>
-            <button onclick="copyText('previewOfficersOutput')">📋 نسخ أكواد الضباط للحافظة</button>
+            <textarea id="previewOfficersOutput" readonly style="height: 100px; background: #111;"></textarea>
+            <button onclick="copyText('previewOfficersOutput')">📋 نسخ أكواد الضباط</button>
         </div>
 
         <div class="card" style="border-color: #34d399;">
-            <h3>🛡️ تخصيص ومعاينة أكواد وأفراد القطاع</h3>
-            <label>صيغة أكواد الأفراد:</label>
+            <h3>🛡️ صيغة أكواد الأفراد</h3>
             <textarea id="soldiersTemplate"><@discordId>
 GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
-
-            <label style="margin-top: 15px;">معاينة أكواد الأفراد الجاهزة للنسخ:</label>
-            <textarea id="previewSoldiersOutput" readonly style="height: 120px; background: #111;"></textarea>
-            <button onclick="copyText('previewSoldiersOutput')">📋 نسخ أكواد الأفراد للحافظة</button>
+            <textarea id="previewSoldiersOutput" readonly style="height: 100px; background: #111;"></textarea>
+            <button onclick="copyText('previewSoldiersOutput')">📋 نسخ أكواد الأفراد</button>
         </div>
 
         <div class="card" style="text-align: center;">
-            <button class="btn-success" style="font-size: 18px; padding: 15px 30px;" onclick="executePromotions()">✅ اعتماد نهائي وتحديث الجدول الأساسي</button>
+            <button class="btn-success" style="font-size: 18px; padding: 15px 30px;" onclick="executePromotions()">✅ اعتماد نهائي وتحديث الجدول</button>
         </div>
     </div>
 
@@ -305,9 +313,37 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         "عقيد", "عميد", "لواء", "فريق", "فريق اول"
     ];
 
+    // قائمة الدورات بحسب الترتيب
     const coursesList = [
-        "فرد أساس", "مركز العمليات", "الاسعافات الاولية", "تأهيل الضباط",
-        "المظلات المشتركة", "الصاعقة", "الضفادع البشرية", "صقور جوية"
+        "فرد أساس",                  // 0
+        "دورة العمليات",              // 1
+        "دورة الإسعافات الأولية",     // 2
+        "تأهيل الضباط",              // 3
+        "المظلات المشتركة",          // 4
+        "دورة الصاعقة",              // 5
+        "الضفادع البشرية",           // 6
+        "الصقور الجوية"              // 7
+    ];
+
+    // الشروط لكل رتبة (السجلات والدورة الجديدة الخاصة بهذه النقلة)
+    // index يوافق انتقال من ranksList[i] إلى ranksList[i+1]
+    const promotionRules = [
+        { minRecords: 30, courseIndex: 0 }, // جندي إلى جندي أول (فرد أساس)
+        { minRecords: 50, courseIndex: -1 },// جندي أول إلى عريف (بدون دورة جديدة، لكنها ترث فرد أساس)
+        { minRecords: 70, courseIndex: -1 },// عريف إلى وكيل رقيب
+        { minRecords: 90, courseIndex: -1 },// وكيل رقيب إلى رقيب (تم إلغاء مسؤول القبول)
+        { minRecords: 110, courseIndex: 1 },// رقيب إلى رقيب أول (دورة العمليات)
+        { minRecords: 130, courseIndex: -1 },// رقيب أول إلى رئيس رقباء
+        { minRecords: 50, courseIndex: [2, 3] }, // رئيس رقباء إلى ملازم (الإسعافات / تأهيل الضباط)
+        { minRecords: 70, courseIndex: 4 }, // ملازم إلى ملازم أول (المظلات المشتركة)
+        { minRecords: 90, courseIndex: -1 },// ملازم أول إلى نقيب (تم إلغاء المدرب العسكري)
+        { minRecords: 110, courseIndex: [5, 6] },// نقيب إلى رائد (الصاعقة / الضفادع البشرية)
+        { minRecords: 130, courseIndex: 7 },// رائد إلى مقدم (الصقور الجوية)
+        { minRecords: 65, courseIndex: 'all' }, // مقدم إلى عقيد (جميع الدورات السابقة)
+        { minRecords: 55, courseIndex: 'all' }, // عقيد إلى عميد (جميع الدورات السابقة)
+        { minRecords: 40, courseIndex: 'all' }, // عميد إلى لواء (جميع الدورات السابقة)
+        { minRecords: 0,  courseIndex: 'all' }, // لواء إلى فريق
+        { minRecords: 0,  courseIndex: 'all' }  // فريق إلى فريق أول
     ];
 
     let membersData = [];
@@ -315,26 +351,59 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     let promotedStatus = {};  
 
     window.onload = function() {
+        renderRulesTable();
+        renderCoursesInputs();
+    };
+
+    function renderRulesTable() {
         const rulesTbody = document.getElementById('rulesTableBody');
+        rulesTbody.innerHTML = '';
         for(let i = 0; i < ranksList.length - 1; i++) {
-            const rankPair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
+            const rule = promotionRules[i];
+            const pair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
+            const rec = rule.minRecords > 0 ? `${rule.minRecords} سجل` : 'بدون شرط';
+            
+            // تحديد الدورات التراكمية لهذه الرتبة للعرض
+            let requiredCoursesText = getRequiredCoursesNamesString(i);
+
             rulesTbody.innerHTML += `
                 <tr>
-                    <td><b>${rankPair}</b></td>
-                    <td style="color: #34d399;">متاح للترقية فوراً (بدون قيود سابقة)</td>
+                    <td><b>${pair}</b></td>
+                    <td style="color: #f59e0b;">${rec}</td>
+                    <td style="text-align: right; padding-right: 15px; font-size: 13px; color: #60a5fa;">${requiredCoursesText}</td>
                 </tr>`;
         }
+    }
 
+    function getRequiredCoursesNamesString(stepIndex) {
+        let list = [];
+        for (let i = 0; i <= stepIndex; i++) {
+            let c = promotionRules[i].courseIndex;
+            if (c === 'all') {
+                return "جميع الدورات السابقة في السلم العسكري";
+            } else if (Array.isArray(c)) {
+                c.forEach(ci => list.push(coursesList[ci]));
+            } else if (c !== -1) {
+                list.push(coursesList[c]);
+            }
+        }
+        // إزالة التكرار
+        let unique = [...new Set(list)];
+        return unique.length > 0 ? unique.join(' + ') : 'تعتمد على دورات الرتب السابقة فقط';
+    }
+
+    function renderCoursesInputs() {
         const coursesContainer = document.getElementById('coursesGridContainer');
+        coursesContainer.innerHTML = '';
         coursesList.forEach((course, index) => {
             coursesContainer.innerHTML += `
                 <div class="course-box">
                     <h4>${course}</h4>
-                    <textarea id="course_${index}" placeholder="أكواد الحاصلين على الدورة..."></textarea>
+                    <textarea id="course_input_${index}" placeholder="اكتب ايديات الديسكورد هنا (كل ايدي في سطر)..."></textarea>
                 </div>
             `;
         });
-    };
+    }
 
     function switchTab(evt, tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -354,7 +423,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             logBox.innerHTML += `${text}<br>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
-        console.log(text);
     }
 
     function loadData() {
@@ -364,49 +432,51 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         document.getElementById('connectionStatus').innerText = '';
         document.getElementById('debugLog').innerHTML = '';
 
-        logDebug("Sending request to Web App...");
-
         fetch(url + "?sheet=وزارة الدفاع")
             .then(res => res.json())
             .then(data => {
                 document.getElementById('loadingArea').style.display = 'none';
                 membersData = data;
-                document.getElementById('connectionStatus').innerText = `✅ تم جلب ${data.length} صف بنجاح من الجدول!`;
-                logDebug(`Total rows received: ${data.length}`);
-                
-                if(data.length > 0) {
-                    logDebug(`First row content: ${JSON.stringify(data[0])}`);
-                }
-                
+                document.getElementById('connectionStatus').innerText = `✅ تم جلب ${data.length} سجل بنجاح!`;
+                logDebug(`Total rows fetched: ${data.length}`);
                 calculateEligibility();
                 renderCards();
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
-                document.getElementById('connectionStatus').innerText = '❌ خطأ في جلب البيانات: ' + err;
+                document.getElementById('connectionStatus').innerText = '❌ خطأ في الاتصال: ' + err;
                 logDebug('Error: ' + err);
             });
     }
 
-    function cleanDiscordId(str) {
+    function cleanId(str) {
         if (!str) return '';
         const match = str.match(/<@!?(\d+)>/);
         return match ? match[1] : str.replace(/\D/g, '');
+    }
+
+    // التحقق هل العسكري يمتلك دورة معينة
+    function memberHasCourse(memberDiscord, memberName, memberId, courseIndex) {
+        const textarea = document.getElementById(`course_input_${courseIndex}`);
+        if (!textarea) return false;
+        const text = textarea.value;
+        const lines = text.split('\n').map(l => cleanId(l)).filter(l => l.length > 0);
+        
+        const cleanDiscord = cleanId(memberDiscord);
+        const cleanMilitaryId = cleanId(String(memberId));
+
+        return lines.includes(cleanDiscord) || lines.includes(cleanMilitaryId) || lines.some(l => memberName.includes(l));
     }
 
     function calculateEligibility() {
         eligibleMembers = {};
         promotedStatus = {};
 
-        if (!membersData || membersData.length === 0) {
-            logDebug("Members data is empty.");
-            return;
-        }
+        if (!membersData || membersData.length === 0) return;
 
         let headerRowIndex = 0;
-        let rankIdx = -1, discordIdx = -1, nameIdx = -1, idIdx = -1, unitIdx = -1;
+        let rankIdx = -1, discordIdx = -1, nameIdx = -1, idIdx = -1, unitIdx = -1, recordsIdx = -1;
 
-        // البحث الذكي عن الأعمدة
         for (let r = 0; r < Math.min(membersData.length, 5); r++) {
             const row = membersData[r];
             row.forEach((cell, cIdx) => {
@@ -416,6 +486,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 if (val.includes('اسم') || val.includes('name')) nameIdx = cIdx;
                 if (val.includes('هوية') || val.includes('ايدي') || val.includes('id')) idIdx = cIdx;
                 if (val.includes('كود') || val.includes('يونت') || val.includes('unit')) unitIdx = cIdx;
+                if (val.includes('سجل') || val.includes('جنائية')) recordsIdx = cIdx;
             });
             if (rankIdx !== -1 || nameIdx !== -1) {
                 headerRowIndex = r;
@@ -423,47 +494,77 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             }
         }
 
-        // إذا لم يتم العثور على عناوين واضحة، نفترض الأعمدة الافتراضية الأولى
         if (rankIdx === -1) rankIdx = 0;
         if (discordIdx === -1) discordIdx = 1;
         if (nameIdx === -1) nameIdx = 2;
         if (idIdx === -1) idIdx = 3;
         if (unitIdx === -1) unitIdx = 4;
-
-        logDebug(`Detected Indexes -> HeaderRow: ${headerRowIndex} | Rank: ${rankIdx}, Discord: ${discordIdx}, Name: ${nameIdx}, ID: ${idIdx}, Unit: ${unitIdx}`);
-
-        let foundCount = 0;
+        if (recordsIdx === -1) recordsIdx = 5; // عمود السجلات الافتراضي
 
         for (let i = headerRowIndex + 1; i < membersData.length; i++) {
             const row = membersData[i];
             if (!row || row.length === 0) continue;
 
             const currentRank = String(row[rankIdx] || '').trim();
-            const memberName = String(row[nameIdx] || 'عسكري بدون اسم').trim();
-            const rawDiscord = String(row[discordIdx] || 'غير متوفر').trim();
+            const memberName = String(row[nameIdx] || 'عسكري').trim();
+            const rawDiscord = String(row[discordIdx] || '').trim();
             const memberId = String(row[idIdx] || '---').trim();
             const unitId = String(row[unitIdx] || '---').trim();
+            const currentRecords = parseInt(row[recordsIdx]) || 0;
 
-            // تجاوز الأسطر الفارغة تماماً
             if (!currentRank && !memberName) continue;
 
-            // البحث عن الرتبة في القائمة
-            let currentRankIdx = ranksList.findIndex(r => currentRank.includes(r));
-            if (currentRankIdx === -1) currentRankIdx = 0; // افتراضي إذا لم تُطابق حرفياً
+            let rankIndex = ranksList.findIndex(r => currentRank.includes(r));
+            if (rankIndex === -1) rankIndex = 0;
 
-            if (currentRankIdx < ranksList.length - 1) {
-                foundCount++;
-                eligibleMembers[i] = {
-                    discord: rawDiscord,
-                    name: memberName,
-                    id: memberId,
-                    unitId: unitId,
-                    currentRank: currentRank || ranksList[0],
-                    targetRank: `${currentRank || ranksList[0]} ⬅️ ${ranksList[currentRankIdx+1]}`
-                };
+            if (rankIndex >= ranksList.length - 1) continue; // وصل لأعلى رتبة
+
+            const rule = promotionRules[rankIndex];
+            
+            // 1. فحص السجلات
+            let passedRecords = currentRecords >= rule.minRecords;
+
+            // 2. فحص الدورات التراكمية المطلوبة لهذه الرتبة وما قبلها
+            let missingCourses = [];
+            for (let step = 0; step <= rankIndex; step++) {
+                let cRule = promotionRules[step].courseIndex;
+                if (cRule === 'all') {
+                    // فحص كل الدورات السابقة
+                    for (let ci = 0; ci < coursesList.length; ci++) {
+                        if (!memberHasCourse(rawDiscord, memberName, memberId, ci)) {
+                            if (!missingCourses.includes(coursesList[ci])) missingCourses.push(coursesList[ci]);
+                        }
+                    }
+                } else if (Array.isArray(cRule)) {
+                    // يحتاج إحدى الدورتين (مثل الإسعافات أو تأهيل الضباط)
+                    let hasOne = cRule.some(ci => memberHasCourse(rawDiscord, memberName, memberId, ci));
+                    if (!hasOne) {
+                        missingCourses.push(cRule.map(ci => coursesList[ci]).join(' أو '));
+                    }
+                } else if (cRule !== -1) {
+                    if (!memberHasCourse(rawDiscord, memberName, memberId, cRule)) {
+                        if (!missingCourses.includes(coursesList[cRule])) missingCourses.push(coursesList[cRule]);
+                    }
+                }
             }
+
+            let passedCourses = missingCourses.length === 0;
+            let isEligible = passedRecords && passedCourses;
+
+            eligibleMembers[i] = {
+                discord: rawDiscord,
+                name: memberName,
+                id: memberId,
+                unitId: unitId,
+                currentRank: currentRank || ranksList[0],
+                targetRank: `${ranksList[rankIndex]} ⬅️ ${ranksList[rankIndex+1]}`,
+                currentRecords: currentRecords,
+                requiredRecords: rule.minRecords,
+                passedRecords: passedRecords,
+                missingCourses: missingCourses,
+                isEligible: isEligible
+            };
         }
-        logDebug(`Total eligible members loaded without conditions: ${foundCount}`);
     }
 
     function renderCards() {
@@ -480,12 +581,28 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             const m = eligibleMembers[index];
             const isPromoted = promotedStatus[index] || false;
 
+            let statusBadge = m.isEligible ? 
+                '<span style="color: #34d399; font-weight: bold;">✅ مستوفٍ للشروط</span>' : 
+                '<span style="color: #ef4444; font-weight: bold;">❌ غير مستوفٍ</span>';
+
+            let reasonsHTML = '';
+            if (!m.passedRecords) {
+                reasonsHTML += `⚠️ السجلات غير كافية (${m.currentRecords} / مطلوب ${m.requiredRecords})<br>`;
+            }
+            if (m.missingCourses.length > 0) {
+                reasonsHTML += `⚠️ ينقصه دورة: ${m.missingCourses.join(', ')}`;
+            }
+            if (m.isEligible) {
+                reasonsHTML = `<span style="color: #34d399;">جاهز للترقية تماماً (سجلات ودورات مطابقة)</span>`;
+            }
+
             const cardHTML = `
-                <div class="soldier-card ${isPromoted ? 'promoted' : ''}" id="card-${index}">
+                <div class="soldier-card ${isPromoted ? 'promoted' : (m.isEligible ? '' : 'not-eligible')}" id="card-${index}">
                     <div class="card-header-row">
                         <div class="unit-box">يونت: ${m.unitId}</div>
                         <div class="avatar-box">🪖</div>
                     </div>
+                    <div style="text-align: center; font-size: 11px;">${statusBadge}</div>
                     <div class="card-body-grid">
                         <div class="info-box">
                             <span>الاسم</span>
@@ -500,17 +617,20 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                             <b style="color: #f59e0b;">${m.currentRank}</b>
                         </div>
                         <div class="info-box">
-                            <span>الرتبة القادمة</span>
-                            <b style="color: #34d399;">${m.targetRank.split('⬅️')[1]}</b>
+                            <span>السجلات</span>
+                            <b>${m.currentRecords} / ${m.requiredRecords}</b>
                         </div>
                     </div>
-                    <div style="font-size: 12px; color: #aaa; text-align: center; word-break: break-all;">
+                    <div class="reasons-box">
+                        <span>حالة الدورات والشروط:</span>
+                        <div style="color: #ddd; margin-top: 3px;">${reasonsHTML}</div>
+                    </div>
+                    <div style="font-size: 11px; color: #888; text-align: center; word-break: break-all;">
                         ديسكورد: ${m.discord}
                     </div>
                     <div class="card-actions">
                         ${!isPromoted ? `
                             <button class="btn-success" onclick="setPromoted(${index}, true)">ترقية ✅</button>
-                            <button class="btn-danger" onclick="setPromoted(${index}, false)">استبعاد ❌</button>
                         ` : `
                             <button class="btn-danger" onclick="setPromoted(${index}, false)">إلغاء الترقية ↩️</button>
                         `}
@@ -528,10 +648,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
 
         if(eligibleCount === 0) {
-            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مطابقة. يرجى مراجعة "سجل التشخيص" في تبويب الاتصال لرؤية شكل البيانات.</div>';
+            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر.</div>';
         }
         if(promotedCount === 0) {
-            promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم نقل أي عنصر لقائمة المترقين بعد.</div>';
+            promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم اعتماد أي ترقية بعد.</div>';
         }
     }
 
@@ -550,10 +670,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 const m = eligibleMembers[index];
                 if(!m) continue;
 
-                const cleanId = cleanDiscordId(m.discord) || m.discord;
+                const cleanDiscordId = cleanId(m.discord) || m.discord;
 
                 const formatted = (template) => template
-                    .replace(/{discordId}/g, cleanId)
+                    .replace(/{discordId}/g, cleanDiscordId)
                     .replace(/{name}/g, m.name)
                     .replace(/{id}/g, m.id)
                     .replace(/{unitId}/g, m.unitId);
@@ -571,11 +691,11 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const textarea = document.getElementById(elementId);
         textarea.select();
         document.execCommand('copy');
-        alert('تم النسخ بنجاح إلى الحافظة! ✅');
+        alert('تم النسخ بنجاح! ✅');
     }
 
     function executePromotions() {
-        if(!confirm('هل أنت متأكد من اعتماد ترقية العساكر وتحديث الجدول؟')) return;
+        if(!confirm('هل أنت متأكد من اعتماد ترقيات العساكر المحددين؟')) return;
         alert('تم اعتماد الترقيات وتحديث السجلات في الجدول بنجاح! 🚀');
     }
 </script>
