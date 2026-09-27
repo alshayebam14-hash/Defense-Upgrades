@@ -24,7 +24,6 @@
         .container { max-width: 1300px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 20px; }
         
-        /* التبويبات */
         .tabs {
             display: flex;
             gap: 10px;
@@ -58,7 +57,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         
-        /* شبكة الدورات الأفقية */
         .courses-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -110,7 +108,6 @@
         th { background-color: #252525; }
         .loading { text-align: center; padding: 20px; color: #f59e0b; }
         
-        /* تصميم نظام البطاقات الجديد بناءً على الرسم */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -216,7 +213,6 @@
         <p>إدارة الشروط، الدورات الأفقية، الفلترة، وصيغ الأكواد والترقيات بذكاء</p>
     </header>
 
-    <!-- أزرار التبويبات -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(event, 'tab-connection')">🔗 الاتصال والبيانات</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-rules')">⚖️ صفحة الشروط</button>
@@ -269,8 +265,9 @@
     <!-- 4. تبويب الترقيات -->
     <div id="tab-promotions" class="tab-content">
         <div class="card">
-            <h3>📋 العساكر المستحقون للترقية (من الصف 43 فما تحته)</h3>
+            <h3>📋 العساكر المستحقون للترقية</h3>
             <p>يعرض هذا القسم فقط المرشحين المستوفين للشروط. استخدم أزرار التحكم لكل بطاقة:</p>
+            <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 إعادة فحص وعرض المستحقين</button>
             <div class="cards-grid" id="eligibleCardsContainer">
                 <div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</div>
             </div>
@@ -286,8 +283,6 @@
 
     <!-- 5. تبويب المعاينة والمخرجات -->
     <div id="tab-output" class="tab-content">
-        
-        <!-- قسم الضباط -->
         <div class="card" style="border-color: #60a5fa;">
             <h3>⭐ تخصيص ومعاينة أكواد وضباط القطاع</h3>
             <label>صيغة أكواد الضباط:</label>
@@ -299,7 +294,6 @@ GR ⭐ M-{unitId} {name} {id}</textarea>
             <button onclick="copyText('previewOfficersOutput')">📋 نسخ أكواد الضباط للحافظة</button>
         </div>
 
-        <!-- قسم الأفراد -->
         <div class="card" style="border-color: #34d399;">
             <h3>🛡️ تخصيص ومعاينة أكواد وأفراد القطاع</h3>
             <label>صيغة أكواد الأفراد:</label>
@@ -332,8 +326,8 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
     ];
 
     let membersData = [];
-    let eligibleMembers = {}; // تخزين حالة الاستحقاق
-    let promotedStatus = {};  // تخزين حالة الضغط على ترقية
+    let eligibleMembers = {}; 
+    let promotedStatus = {};  
 
     window.onload = function() {
         const rulesTbody = document.getElementById('rulesTableBody');
@@ -379,6 +373,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         document.getElementById(tabId).classList.add('active');
         evt.currentTarget.classList.add('active');
         if(tabId === 'tab-output') updateOutputs();
+        if(tabId === 'tab-promotions') {
+            calculateEligibility();
+            renderCards();
+        }
     }
 
     function loadData() {
@@ -406,9 +404,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         promotedStatus = {};
 
         membersData.forEach((row, index) => {
-            if(index < 42) return; // سكب الصفوف من 1 إلى 42، البدء من صف 43 وتحت
+            // تجاهل الصف الأول إذا كان عناوين (Headers)
+            if(index === 0) return;
 
-            const discordVal = row[3] || '';
+            const discordVal = (row[3] || '').trim();
             if(!discordVal) return;
 
             const currentRank = (row[2] || '').trim();
@@ -424,7 +423,8 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             if(isEligible) {
                 for(let cIdx of reqCourses) {
                     const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
-                    if(!courseText.includes(discordVal.trim())) {
+                    // فحص شامل للاستدلال على الأيدي داخل حقل الدورات
+                    if(!courseText.includes(discordVal)) {
                         isEligible = false;
                         break;
                     }
@@ -434,9 +434,9 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             if(isEligible) {
                 eligibleMembers[index] = {
                     discord: discordVal,
-                    name: row[4] || '',
-                    id: row[5] || '',
-                    unitId: row[6] || '',
+                    name: row[4] || 'بدون اسم',
+                    id: row[5] || '---',
+                    unitId: row[6] || '---',
                     currentRank: currentRank,
                     targetRank: `${currentRank} ⬅️ ${ranksList[rankIdx+1]}`,
                     records: records
@@ -507,7 +507,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
 
         if(eligibleCount === 0) {
-            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مستحقة معلقة حالياً.</div>';
+            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مستحقة معلقة حالياً أو لم يتم مطابقة الشروط.</div>';
         }
         if(promotedCount === 0) {
             promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم نقل أي عنصر لقائمة المترقين بعد.</div>';
