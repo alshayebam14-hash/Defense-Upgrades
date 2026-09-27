@@ -255,7 +255,7 @@
     <div id="tab-courses" class="tab-content">
         <div class="card">
             <h3>🎖️ إدارة الدورات واجتياز الأعضاء (توزيع أفقي)</h3>
-            <p>ضع أكواد الديسكورد (Copy User) لكل دورة في خانتها الخاصة، وسيتم حفظها بشكل دائم:</p>
+            <p>ضع أكواد الديسكورد (سواء بالأرقام التسلسلية أو بدونها)، وسيتم التعامل معها بذكاء:</p>
             <div class="courses-grid" id="coursesGridContainer"></div>
             <br>
             <button class="btn-success" onclick="saveCoursesData()">💾 حفظ جميع بيانات الدورات</button>
@@ -399,16 +399,23 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             });
     }
 
+    // دالة استخراج أيدي الديسكورد النظيف وتجاهل الأرقام التسلسلية
+    function cleanDiscordId(str) {
+        if (!str) return '';
+        const match = str.match(/<@!?(\d+)>/);
+        return match ? match[1] : str.replace(/\D/g, '');
+    }
+
     function calculateEligibility() {
         eligibleMembers = {};
         promotedStatus = {};
 
         membersData.forEach((row, index) => {
-            // تجاهل الصف الأول إذا كان عناوين (Headers)
             if(index === 0) return;
 
-            const discordVal = (row[3] || '').trim();
-            if(!discordVal) return;
+            const rawDiscord = (row[3] || '').trim();
+            const memberDiscordId = cleanDiscordId(rawDiscord);
+            if(!memberDiscordId) return;
 
             const currentRank = (row[2] || '').trim();
             const rankIdx = ranksList.findIndex(r => r === currentRank);
@@ -423,8 +430,18 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
             if(isEligible) {
                 for(let cIdx of reqCourses) {
                     const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
-                    // فحص شامل للاستدلال على الأيدي داخل حقل الدورات
-                    if(!courseText.includes(discordVal)) {
+                    
+                    // استخراج جميع أيدي الديسكورد الموجودة في صندوق الدورة المعنية وتنقيتها
+                    const lines = courseText.split('\n');
+                    let foundCourse = false;
+                    for(let line of lines) {
+                        if(cleanDiscordId(line) === memberDiscordId) {
+                            foundCourse = true;
+                            break;
+                        }
+                    }
+
+                    if(!foundCourse) {
                         isEligible = false;
                         break;
                     }
@@ -433,7 +450,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
 
             if(isEligible) {
                 eligibleMembers[index] = {
-                    discord: discordVal,
+                    discord: rawDiscord,
                     name: row[4] || 'بدون اسم',
                     id: row[5] || '---',
                     unitId: row[6] || '---',
