@@ -178,30 +178,19 @@
             padding: 8px;
             font-size: 13px;
         }
-
-        .multi-select-container {
-            background: #252525;
-            border: 1px solid var(--border-color);
+        #debugLog {
+            background: #111;
+            color: #34d399;
+            padding: 10px;
             border-radius: 6px;
-            max-height: 120px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
             overflow-y: auto;
-            text-align: right;
-            padding: 5px 10px;
-        }
-        .multi-select-container label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: normal;
-            font-size: 13px;
-            margin-bottom: 5px;
-            cursor: pointer;
-            color: #ddd;
-        }
-        .multi-select-container input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-            cursor: pointer;
+            margin-top: 10px;
+            border: 1px solid #333;
+            text-align: left;
+            direction: ltr;
         }
     </style>
 </head>
@@ -229,6 +218,8 @@
             <button onclick="loadData()">🔄 جلب بيانات العساكر من الجدول</button>
             <div id="loadingArea" class="loading" style="display: none;">جاري جلب البيانات من الجدول... ⏳</div>
             <div id="connectionStatus" style="margin-top: 15px; font-weight: bold; color: #60a5fa;"></div>
+            <label style="margin-top: 15px;">سجل التشخيص المفصل (مهم لمعرفة كيف يقرأ الكود جدولك):</label>
+            <div id="debugLog">سجل تشخيص البيانات سيظهر هنا بعد الجلب...</div>
         </div>
     </div>
 
@@ -236,30 +227,24 @@
     <div id="tab-rules" class="tab-content">
         <div class="card">
             <h3>⚖️ شروط الترقيات لجميع الرتب العسكرية</h3>
-            <p>حدد الحد الأدنى للسجلات المطلوبة، والدورات اللازمة لكل ترقية:</p>
+            <p>تم إزالة القيود مؤقتاً لتظهر لك كل الأسماء المتاحة في الجدول:</p>
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 25%;">الرتبة الحالية ⬅️ التالية</th>
-                        <th style="width: 25%;">السجلات المطلوبة</th>
-                        <th style="width: 50%;">الدورات المطلوبة (اختيار متعدد)</th>
+                        <th style="width: 30%;">الرتبة الحالية ⬅️ التالية</th>
+                        <th style="width: 70%;">الحالة (بدون شروط معقدة حالياً)</th>
                     </tr>
                 </thead>
                 <tbody id="rulesTableBody"></tbody>
             </table>
-            <br>
-            <button class="btn-success" onclick="saveRulesData()">💾 حفظ شروط الترقيات</button>
         </div>
     </div>
 
     <!-- 3. تبويب الدورات -->
     <div id="tab-courses" class="tab-content">
         <div class="card">
-            <h3>🎖️ إدارة الدورات واجتياز الأعضاء (توزيع أفقي)</h3>
-            <p>ضع أكواد الديسكورد (سواء بالأرقام التسلسلية أو بدونها)، وسيتم التعامل معها بذكاء:</p>
+            <h3>🎖️ إدارة الدورات واجتياز الأعضاء (اختياري)</h3>
             <div class="courses-grid" id="coursesGridContainer"></div>
-            <br>
-            <button class="btn-success" onclick="saveCoursesData()">💾 حفظ جميع بيانات الدورات</button>
         </div>
     </div>
 
@@ -267,8 +252,7 @@
     <div id="tab-promotions" class="tab-content">
         <div class="card">
             <h3>📋 العساكر المستحقون للترقية</h3>
-            <p>يعرض هذا القسم فقط المرشحين المستوفين للشروط. استخدم أزرار التحكم لكل بطاقة:</p>
-            <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 إعادة فحص وعرض المستحقين</button>
+            <button onclick="calculateEligibility(); renderCards();" style="margin-bottom: 15px; background: #60a5fa;">🔄 إعادة فحص وعرض المرشحين</button>
             <div class="cards-grid" id="eligibleCardsContainer">
                 <div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">الرجاء جلب البيانات من تبويب "الاتصال والبيانات" أولاً.</div>
             </div>
@@ -334,35 +318,19 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         const rulesTbody = document.getElementById('rulesTableBody');
         for(let i = 0; i < ranksList.length - 1; i++) {
             const rankPair = `${ranksList[i]} ⬅️ ${ranksList[i+1]}`;
-            const savedVal = localStorage.getItem('rule_rec_'+i) || (i === 0 ? 5 : 10);
-            const savedCourses = JSON.parse(localStorage.getItem('rule_courses_'+i) || '[]');
-            
-            let coursesCheckboxes = '<div class="multi-select-container">';
-            coursesList.forEach((course, cIdx) => {
-                const isChecked = savedCourses.includes(cIdx) ? 'checked' : '';
-                coursesCheckboxes += `
-                    <label>
-                        <input type="checkbox" class="rule-course-cb-${i}" value="${cIdx}" ${isChecked}>
-                        ${course}
-                    </label>`;
-            });
-            coursesCheckboxes += '</div>';
-
             rulesTbody.innerHTML += `
                 <tr>
-                    <td>${rankPair}</td>
-                    <td><input type="number" id="rule_rec_${i}" value="${savedVal}"></td>
-                    <td>${coursesCheckboxes}</td>
+                    <td><b>${rankPair}</b></td>
+                    <td style="color: #34d399;">متاح للترقية فوراً (بدون قيود سابقة)</td>
                 </tr>`;
         }
 
         const coursesContainer = document.getElementById('coursesGridContainer');
         coursesList.forEach((course, index) => {
-            const savedCourseVal = localStorage.getItem('course_'+index) || '';
             coursesContainer.innerHTML += `
                 <div class="course-box">
                     <h4>${course}</h4>
-                    <textarea id="course_${index}" placeholder="أكواد الحاصلين على الدورة...">${savedCourseVal}</textarea>
+                    <textarea id="course_${index}" placeholder="أكواد الحاصلين على الدورة..."></textarea>
                 </div>
             `;
         });
@@ -380,11 +348,23 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
     }
 
+    function logDebug(text) {
+        const logBox = document.getElementById('debugLog');
+        if(logBox) {
+            logBox.innerHTML += `${text}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+        console.log(text);
+    }
+
     function loadData() {
         const url = document.getElementById('scriptUrl').value;
         if(!url) { alert('الرجاء إدخال الرابط'); return; }
         document.getElementById('loadingArea').style.display = 'block';
         document.getElementById('connectionStatus').innerText = '';
+        document.getElementById('debugLog').innerHTML = '';
+
+        logDebug("Sending request to Web App...");
 
         fetch(url + "?sheet=وزارة الدفاع")
             .then(res => res.json())
@@ -392,14 +372,19 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 document.getElementById('loadingArea').style.display = 'none';
                 membersData = data;
                 document.getElementById('connectionStatus').innerText = `✅ تم جلب ${data.length} صف بنجاح من الجدول!`;
-                console.log("البيانات المستلمة من الجدول:", data);
+                logDebug(`Total rows received: ${data.length}`);
+                
+                if(data.length > 0) {
+                    logDebug(`First row content: ${JSON.stringify(data[0])}`);
+                }
+                
                 calculateEligibility();
                 renderCards();
             })
             .catch(err => {
                 document.getElementById('loadingArea').style.display = 'none';
                 document.getElementById('connectionStatus').innerText = '❌ خطأ في جلب البيانات: ' + err;
-                alert('خطأ في جلب البيانات: ' + err);
+                logDebug('Error: ' + err);
             });
     }
 
@@ -414,91 +399,71 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         promotedStatus = {};
 
         if (!membersData || membersData.length === 0) {
-            console.warn("البيانات فارغة.");
+            logDebug("Members data is empty.");
             return;
         }
 
-        // البحث بذكاء عن صف العناوين (Header Row) في أول 3 صفوف
         let headerRowIndex = 0;
-        let rankIdx = -1, discordIdx = -1, nameIdx = -1, idIdx = -1, unitIdx = -1, recordsIdx = -1;
+        let rankIdx = -1, discordIdx = -1, nameIdx = -1, idIdx = -1, unitIdx = -1;
 
-        for (let r = 0; r < Math.min(membersData.length, 3); r++) {
+        // البحث الذكي عن الأعمدة
+        for (let r = 0; r < Math.min(membersData.length, 5); r++) {
             const row = membersData[r];
             row.forEach((cell, cIdx) => {
                 const val = String(cell).trim().toLowerCase();
-                if (val.includes('رتبة')) rankIdx = cIdx;
+                if (val.includes('رتبة') || val.includes('rank')) rankIdx = cIdx;
                 if (val.includes('ديسكورد') || val.includes('discord')) discordIdx = cIdx;
-                if (val.includes('اسم')) nameIdx = cIdx;
-                if (val.includes('الهوية') || val.includes('أيدي') || val.includes('id')) idIdx = cIdx;
-                if (val.includes('الكود') || val.includes('يونت') || val.includes('unit')) unitIdx = cIdx;
-                if (val.includes('سجلات') || val.includes('سجل')) recordsIdx = cIdx;
+                if (val.includes('اسم') || val.includes('name')) nameIdx = cIdx;
+                if (val.includes('هوية') || val.includes('ايدي') || val.includes('id')) idIdx = cIdx;
+                if (val.includes('كود') || val.includes('يونت') || val.includes('unit')) unitIdx = cIdx;
             });
-            if (rankIdx !== -1 || discordIdx !== -1) {
+            if (rankIdx !== -1 || nameIdx !== -1) {
                 headerRowIndex = r;
                 break;
             }
         }
 
-        // إذا لم يتم العثور عليها تلقائياً، نعتمد الترتيب الظاهر في صورتك (الرتبة، ديسكورد، الاسم، رقم الهوية، الكود، السجلات)
-        if (rankIdx === -1) rankIdx = 0;       // العمود الأول تقريبا
-        if (discordIdx === -1) discordIdx = 1; // العمود الثاني
-        if (nameIdx === -1) nameIdx = 2;       // العمود الثالث
-        if (idIdx === -1) idIdx = 3;           // العمود الرابع
-        if (unitIdx === -1) unitIdx = 4;       // العمود الخامس (الكود)
-        if (recordsIdx === -1) recordsIdx = 6; // العمود السابع (السجلات)
+        // إذا لم يتم العثور على عناوين واضحة، نفترض الأعمدة الافتراضية الأولى
+        if (rankIdx === -1) rankIdx = 0;
+        if (discordIdx === -1) discordIdx = 1;
+        if (nameIdx === -1) nameIdx = 2;
+        if (idIdx === -1) idIdx = 3;
+        if (unitIdx === -1) unitIdx = 4;
 
-        console.log(`مؤشرات الأعمدة المكتشفة - صف الهيدر: ${headerRowIndex} | الرتبة: ${rankIdx}, ديسكورد: ${discordIdx}, الاسم: ${nameIdx}, الأيدي: ${idIdx}, اليونت: ${unitIdx}, السجلات: ${recordsIdx}`);
+        logDebug(`Detected Indexes -> HeaderRow: ${headerRowIndex} | Rank: ${rankIdx}, Discord: ${discordIdx}, Name: ${nameIdx}, ID: ${idIdx}, Unit: ${unitIdx}`);
 
-        // البدء من الصف الذي بعد صف العناوين
+        let foundCount = 0;
+
         for (let i = headerRowIndex + 1; i < membersData.length; i++) {
             const row = membersData[i];
             if (!row || row.length === 0) continue;
 
-            const rawDiscord = String(row[discordIdx] || '').trim();
-            const memberDiscordId = cleanDiscordId(rawDiscord);
-            if (!memberDiscordId) continue;
-
             const currentRank = String(row[rankIdx] || '').trim();
-            const currentRankIdx = ranksList.findIndex(r => r === currentRank);
-            if (currentRankIdx === -1 || currentRankIdx >= ranksList.length - 1) continue;
+            const memberName = String(row[nameIdx] || 'عسكري بدون اسم').trim();
+            const rawDiscord = String(row[discordIdx] || 'غير متوفر').trim();
+            const memberId = String(row[idIdx] || '---').trim();
+            const unitId = String(row[unitIdx] || '---').trim();
 
-            const records = parseInt(row[recordsIdx]) || 0;
-            const minRec = parseInt(localStorage.getItem('rule_rec_'+currentRankIdx) || 10);
-            const reqCourses = JSON.parse(localStorage.getItem('rule_courses_'+currentRankIdx) || '[]');
+            // تجاوز الأسطر الفارغة تماماً
+            if (!currentRank && !memberName) continue;
 
-            let isEligible = (records >= minRec);
+            // البحث عن الرتبة في القائمة
+            let currentRankIdx = ranksList.findIndex(r => currentRank.includes(r));
+            if (currentRankIdx === -1) currentRankIdx = 0; // افتراضي إذا لم تُطابق حرفياً
 
-            if (isEligible) {
-                for (let cIdx of reqCourses) {
-                    const courseText = document.getElementById('course_'+cIdx)?.value || localStorage.getItem('course_'+cIdx) || '';
-                    const lines = courseText.split('\n');
-                    let foundCourse = false;
-                    for (let line of lines) {
-                        if (cleanDiscordId(line) === memberDiscordId) {
-                            foundCourse = true;
-                            break;
-                        }
-                    }
-                    if (!foundCourse) {
-                        isEligible = false;
-                        break;
-                    }
-                }
-            }
-
-            if (isEligible) {
+            if (currentRankIdx < ranksList.length - 1) {
+                foundCount++;
                 eligibleMembers[i] = {
                     discord: rawDiscord,
-                    name: String(row[nameIdx] || 'بدون اسم'),
-                    id: String(row[idIdx] || '---'),
-                    unitId: String(row[unitIdx] || '---'),
-                    currentRank: currentRank,
-                    targetRank: `${currentRank} ⬅️ ${ranksList[currentRankIdx+1]}`,
-                    records: records
+                    name: memberName,
+                    id: memberId,
+                    unitId: unitId,
+                    currentRank: currentRank || ranksList[0],
+                    targetRank: `${currentRank || ranksList[0]} ⬅️ ${ranksList[currentRankIdx+1]}`
                 };
             }
         }
-        console.log("الأعضاء المستحقون المكتشفون:", eligibleMembers);
+        logDebug(`Total eligible members loaded without conditions: ${foundCount}`);
     }
 
     function renderCards() {
@@ -540,12 +505,12 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                         </div>
                     </div>
                     <div style="font-size: 12px; color: #aaa; text-align: center; word-break: break-all;">
-                        ${m.discord} | السجلات: ${m.records}
+                        ديسكورد: ${m.discord}
                     </div>
                     <div class="card-actions">
                         ${!isPromoted ? `
                             <button class="btn-success" onclick="setPromoted(${index}, true)">ترقية ✅</button>
-                            <button class="btn-danger" onclick="setPromoted(${index}, false)">عدم ترقية ❌</button>
+                            <button class="btn-danger" onclick="setPromoted(${index}, false)">استبعاد ❌</button>
                         ` : `
                             <button class="btn-danger" onclick="setPromoted(${index}, false)">إلغاء الترقية ↩️</button>
                         `}
@@ -563,7 +528,7 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         }
 
         if(eligibleCount === 0) {
-            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مستحقة معلقة حالياً أو لم يتم مطابقة الشروط (تأكد من الرتب والسجلات والدورات).</div>';
+            eligibleContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 20px;">لا توجد عناصر مطابقة. يرجى مراجعة "سجل التشخيص" في تبويب الاتصال لرؤية شكل البيانات.</div>';
         }
         if(promotedCount === 0) {
             promotedContainer.innerHTML = '<div style="color: #777; grid-column: 1 / -1; text-align: center; padding: 10px;">لم يتم نقل أي عنصر لقائمة المترقين بعد.</div>';
@@ -585,8 +550,10 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
                 const m = eligibleMembers[index];
                 if(!m) continue;
 
+                const cleanId = cleanDiscordId(m.discord) || m.discord;
+
                 const formatted = (template) => template
-                    .replace(/{discordId}/g, m.discord)
+                    .replace(/{discordId}/g, cleanId)
                     .replace(/{name}/g, m.name)
                     .replace(/{id}/g, m.id)
                     .replace(/{unitId}/g, m.unitId);
@@ -605,32 +572,6 @@ GR 💂‍♂️ R-{unitId} {name} {id}</textarea>
         textarea.select();
         document.execCommand('copy');
         alert('تم النسخ بنجاح إلى الحافظة! ✅');
-    }
-
-    function saveRulesData() {
-        for(let i = 0; i < ranksList.length - 1; i++) {
-            const inputElem = document.getElementById('rule_rec_'+i);
-            if(inputElem) {
-                localStorage.setItem('rule_rec_'+i, inputElem.value);
-            }
-            const checkboxes = document.querySelectorAll(`.rule-course-cb-${i}:checked`);
-            const selectedCourses = Array.from(checkboxes).map(cb => parseInt(cb.value));
-            localStorage.setItem('rule_courses_'+i, JSON.stringify(selectedCourses));
-        }
-        alert('تم حفظ شروط الترقيات بنجاح! 💾');
-        if(membersData.length > 0) {
-            calculateEligibility();
-            renderCards();
-        }
-    }
-
-    function saveCoursesData() {
-        coursesList.forEach((_, index) => localStorage.setItem('course_'+index, document.getElementById('course_'+index).value));
-        alert('تم حفظ بيانات جميع الدورات بنجاح! 💾');
-        if(membersData.length > 0) {
-            calculateEligibility();
-            renderCards();
-        }
     }
 
     function executePromotions() {
